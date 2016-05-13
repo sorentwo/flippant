@@ -1,0 +1,2 @@
+defmodule Flippant do
+end
