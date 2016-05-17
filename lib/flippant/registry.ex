@@ -17,6 +17,4 @@ defmodule Flippant.Registry do
   def registered do
     Agent.get(__MODULE__, &(Enum.into(&1, %{})))
   end
-
-  # deregister
 end

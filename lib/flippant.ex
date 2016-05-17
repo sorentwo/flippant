@@ -18,6 +18,7 @@ defmodule Flippant do
   end
 
   defdelegate [add(feature),
+               breakdown(actor),
                enable(feature, group),
                enable(feature, group, values),
                enabled?(feature, actor),

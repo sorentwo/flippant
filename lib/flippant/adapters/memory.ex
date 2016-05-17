@@ -11,6 +11,10 @@ defmodule Flippant.Adapters.Memory do
     GenServer.cast(adapter, {:add, feature})
   end
 
+  def breakdown(actor) do
+    GenServer.call(adapter, {:breakdown, actor})
+  end
+
   def clear do
     GenServer.cast(adapter, :clear)
   end
@@ -84,15 +88,20 @@ defmodule Flippant.Adapters.Memory do
     {:noreply, table}
   end
 
-  def handle_call({:enabled?, feature, actor}, _from, table) do
-    registered = Registry.registered
+  def handle_call({:breakdown, actor}, _from, table) do
+    fun = fn {feature, rules}, acc ->
+      Map.put(acc, feature, matches_any_rules?(rules, actor))
+    end
 
-    enabled? = case :ets.lookup(table, feature) do
-      [{_, rules}] -> matches_any_rules?(rules, registered, actor)
+    {:reply, :ets.foldl(fun, %{}, table), table}
+  end
+  def handle_call({:enabled?, feature, actor}, _from, table) do
+    enabled = case :ets.lookup(table, feature) do
+      [{_, rules}] -> matches_any_rules?(rules, actor)
       [] -> false
     end
 
-    {:reply, enabled?, table}
+    {:reply, enabled, table}
   end
   def handle_call({:features, group}, _from, table) do
     {:reply, get_features(table, group), table}
@@ -109,17 +118,17 @@ defmodule Flippant.Adapters.Memory do
     |> :ets.tab2list
     |> Enum.map(&(elem &1, 0))
   end
-  defp get_features(table, for_group) do
+  defp get_features(table, group) do
     table
     |> :ets.tab2list
-    |> Enum.filter(fn({_, rules}) ->
-         Enum.any?(rules, fn({group, _}) -> group == for_group end)
-       end)
+    |> Enum.filter(fn {_, rules} -> Enum.any?(rules, &(elem(&1, 0) == group)) end)
     |> Enum.map(&(elem &1, 0))
   end
 
-  defp matches_any_rules?(rules, registered, actor) do
-    Enum.any?(rules, fn({group, values}) ->
+  defp matches_any_rules?(rules, actor) do
+    registered = Registry.registered
+
+    Enum.any?(rules, fn {group, values} ->
       if fun = Map.get(registered, group) do
         apply(fun, [actor, values])
       end
@@ -127,6 +136,6 @@ defmodule Flippant.Adapters.Memory do
   end
 
   defp without_group(rules, to_remove) do
-    Enum.reject(rules, fn({group, _}) -> group == to_remove end)
+    Enum.reject(rules, fn {group, _} -> group == to_remove end)
   end
 end

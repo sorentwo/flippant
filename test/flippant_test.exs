@@ -96,5 +96,22 @@ defmodule FlippantTest do
     refute Flippant.enabled?("search", actor_b)
   end
 
-  # breakdown(actor)
+  test "breakdown/1 lists all enabled features for an actor" do
+    Flippant.register(:awesome, fn(actor, _) -> actor.awesome? end)
+    Flippant.register(:radical, fn(actor, _) -> actor.radical? end)
+    Flippant.register(:heinous, fn(actor, _) -> !actor.awesome? end)
+
+    actor = %{id: 1, awesome?: true, radical?: true}
+
+    Flippant.enable("search", "awesome")
+    Flippant.enable("search", "heinous")
+    Flippant.enable("delete", "radical")
+    Flippant.enable("invite", "heinous")
+
+    assert Flippant.breakdown(actor) == %{
+      "search" => true,
+      "delete" => true,
+      "invite" => false
+    }
+  end
 end
