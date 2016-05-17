@@ -1,6 +1,8 @@
 defmodule Flippant.Adapters.Memory do
   use GenServer
 
+  alias Flippant.Registry
+
   def start_link do
     GenServer.start_link(__MODULE__, :ok, [name: __MODULE__])
   end
@@ -25,6 +27,10 @@ defmodule Flippant.Adapters.Memory do
       when is_binary(group) do
 
     GenServer.cast(adapter, {:add, feature, {group, values}})
+  end
+
+  def enabled?(feature, actor) when is_binary(feature) do
+    GenServer.call(adapter, {:enabled?, feature, actor})
   end
 
   def features(group \\ :all) do
@@ -78,6 +84,16 @@ defmodule Flippant.Adapters.Memory do
     {:noreply, table}
   end
 
+  def handle_call({:enabled?, feature, actor}, _from, table) do
+    registered = Registry.registered
+
+    enabled? = case :ets.lookup(table, feature) do
+      [{_, rules}] -> matches_any_rules?(rules, registered, actor)
+      [] -> false
+    end
+
+    {:reply, enabled?, table}
+  end
   def handle_call({:features, group}, _from, table) do
     {:reply, get_features(table, group), table}
   end
@@ -100,6 +116,14 @@ defmodule Flippant.Adapters.Memory do
          Enum.any?(rules, fn({group, _}) -> group == for_group end)
        end)
     |> Enum.map(&(elem &1, 0))
+  end
+
+  defp matches_any_rules?(rules, registered, actor) do
+    Enum.any?(rules, fn({group, values}) ->
+      if fun = Map.get(registered, group) do
+        apply(fun, [actor, values])
+      end
+    end)
   end
 
   defp without_group(rules, to_remove) do

@@ -2,7 +2,7 @@ defmodule FlippantTest do
   use ExUnit.Case
 
   setup do
-    Flippant.clear
+    Flippant.reset!
 
     :ok
   end
@@ -15,11 +15,11 @@ defmodule FlippantTest do
     assert Flippant.features == ["delete", "search"]
   end
 
-  test "clear/0 removes all known features" do
+  test "reset!/0 removes all known features" do
     Flippant.add("search")
     Flippant.add("delete")
 
-    Flippant.clear
+    Flippant.reset!
 
     assert Flippant.features == []
   end
@@ -53,6 +53,48 @@ defmodule FlippantTest do
     assert Flippant.features("users") == []
   end
 
+  test "enabled?/2 checks a feature for an actor" do
+    Flippant.register("staff", fn(actor, _values) -> actor.staff? end)
+
+    actor_a = %{id: 1, staff?: true}
+    actor_b = %{id: 2, staff?: false}
+
+    refute Flippant.enabled?("search", actor_a)
+    refute Flippant.enabled?("search", actor_b)
+
+    Flippant.enable("search", "staff")
+
+    assert Flippant.enabled?("search", actor_a)
+    refute Flippant.enabled?("search", actor_b)
+  end
+
+  test "enabled?/2 checks for a feature against multiple groups" do
+    Flippant.register(:awesome, fn(actor, _) -> actor.awesome? end)
+    Flippant.register(:radical, fn(actor, _) -> actor.radical? end)
+
+    actor_a = %{id: 1, awesome?: true, radical?: false}
+    actor_b = %{id: 2, awesome?: false, radical?: true}
+    actor_c = %{id: 3, awesome?: false, radical?: false}
+
+    Flippant.enable("search", "awesome")
+    Flippant.enable("search", "radical")
+
+    assert Flippant.enabled?("search", actor_a)
+    assert Flippant.enabled?("search", actor_b)
+    refute Flippant.enabled?("search", actor_c)
+  end
+
+  test "enabled?/2 uses rule values when checking" do
+    Flippant.register(:awesome, fn(actor, ids) -> actor.id in ids end)
+
+    actor_a = %{id: 1}
+    actor_b = %{id: 5}
+
+    Flippant.enable("search", "awesome", [1, 2, 3])
+
+    assert Flippant.enabled?("search", actor_a)
+    refute Flippant.enabled?("search", actor_b)
+  end
+
   # breakdown(actor)
-  # enabled?(feature, actor)
 end
