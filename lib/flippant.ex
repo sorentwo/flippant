@@ -1,14 +1,15 @@
 defmodule Flippant do
   use Application
 
-  alias Flippant.Adapters.Memory
-  alias Flippant.Registry
+  require Flippant.Adapter
+
+  alias Flippant.{Adapter, Registry}
 
   def start(_, _) do
     import Supervisor.Spec
 
     children = [
-      worker(Memory, []),
+      worker(Adapter.adapter, []),
       worker(Registry, [])
     ]
 
@@ -17,19 +18,21 @@ defmodule Flippant do
     Supervisor.start_link(children, options)
   end
 
-  defdelegate [add(feature),
-               breakdown(actor),
-               enable(feature, group),
-               enable(feature, group, values),
-               enabled?(feature, actor),
-               disable(feature, group),
-               features,
-               features(group),
-               remove(feature)], to: Memory
+  defdelegate [register(group, fun), registered], to: Registry
 
-  defdelegate [register(group, fun)], to: Registry
+  Adapter.defdelegate [
+    add(feature),
+    breakdown(actor),
+    enable(feature, group),
+    enable(feature, group, values),
+    enabled?(feature, actor),
+    disable(feature, group),
+    features,
+    features(group),
+    remove(feature)
+  ]
 
   def reset! do
-    Memory.clear && Registry.clear
+    Adapter.adapter.clear && Registry.clear
   end
 end

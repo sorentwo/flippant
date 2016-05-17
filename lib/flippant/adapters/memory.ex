@@ -1,8 +1,6 @@
 defmodule Flippant.Adapters.Memory do
   use GenServer
 
-  alias Flippant.Registry
-
   def start_link do
     GenServer.start_link(__MODULE__, :ok, [name: __MODULE__])
   end
@@ -126,7 +124,7 @@ defmodule Flippant.Adapters.Memory do
   end
 
   defp matches_any_rules?(rules, actor) do
-    registered = Registry.registered
+    registered = Flippant.registered
 
     Enum.any?(rules, fn {group, values} ->
       if fun = Map.get(registered, group) do
