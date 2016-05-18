@@ -1,56 +1,16 @@
 defmodule Flippant.Adapter.Memory do
   use GenServer
 
-  @behaviour Flippant.Adapter
+  import Flippant.Rules, only: [enabled_for_actor?: 2]
 
-  def start_link do
-    GenServer.start_link(__MODULE__, :ok, [name: __MODULE__])
-  end
-
-  def add(feature) when is_binary(feature) do
-    GenServer.cast(adapter, {:add, feature})
-  end
-
-  def breakdown(actor) do
-    GenServer.call(adapter, {:breakdown, actor})
-  end
-
-  def clear do
-    GenServer.cast(adapter, :clear)
-  end
-
-  def disable(feature, group)
-      when is_binary(feature)
-      when is_binary(group) do
-
-    GenServer.cast(adapter, {:remove, feature, group})
-  end
-
-  def enable(feature, group, values \\ true)
-      when is_binary(feature)
-      when is_binary(group) do
-
-    GenServer.cast(adapter, {:add, feature, {group, values}})
-  end
-
-  def enabled?(feature, actor) when is_binary(feature) do
-    GenServer.call(adapter, {:enabled?, feature, actor})
-  end
-
-  def features(group \\ :all) do
-    GenServer.call(adapter, {:features, group})
-  end
-
-  def remove(feature) when is_binary(feature) do
-    GenServer.cast(adapter, {:remove, feature})
+  def start_link(options) do
+    GenServer.start_link(__MODULE__, options, [name: __MODULE__])
   end
 
   # Callbacks
 
-  def init(:ok) do
-    table = :ets.new(:features, [])
-
-    {:ok, table}
+  def init(_options) do
+    {:ok, :ets.new(:features, [])}
   end
 
   def handle_cast({:add, feature}, table) do
@@ -90,14 +50,14 @@ defmodule Flippant.Adapter.Memory do
 
   def handle_call({:breakdown, actor}, _from, table) do
     fun = fn {feature, rules}, acc ->
-      Map.put(acc, feature, matches_any_rules?(rules, actor))
+      Map.put(acc, feature, enabled_for_actor?(rules, actor))
     end
 
     {:reply, :ets.foldl(fun, %{}, table), table}
   end
   def handle_call({:enabled?, feature, actor}, _from, table) do
     enabled = case :ets.lookup(table, feature) do
-      [{_, rules}] -> matches_any_rules?(rules, actor)
+      [{_, rules}] -> enabled_for_actor?(rules, actor)
       [] -> false
     end
 
@@ -109,10 +69,6 @@ defmodule Flippant.Adapter.Memory do
 
   # Helpers
 
-  defp adapter do
-    Process.whereis(__MODULE__)
-  end
-
   defp get_features(table, :all) do
     table
     |> :ets.tab2list
@@ -123,16 +79,6 @@ defmodule Flippant.Adapter.Memory do
     |> :ets.tab2list
     |> Enum.filter(fn {_, rules} -> Enum.any?(rules, &(elem(&1, 0) == group)) end)
     |> Enum.map(&(elem &1, 0))
-  end
-
-  defp matches_any_rules?(rules, actor) do
-    registered = Flippant.registered
-
-    Enum.any?(rules, fn {group, values} ->
-      if fun = Map.get(registered, group) do
-        apply(fun, [actor, values])
-      end
-    end)
   end
 
   defp without_group(rules, to_remove) do

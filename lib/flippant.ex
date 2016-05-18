@@ -1,16 +1,16 @@
 defmodule Flippant do
   use Application
 
-  require Flippant.Adapter
-
-  alias Flippant.{Adapter, Registry}
+  alias Flippant.{GroupRegistry, RuleRegistry}
 
   def start(_, _) do
     import Supervisor.Spec
 
+    adapter = Application.get_env(:flippant, :adapter)
+
     children = [
-      worker(Adapter.adapter, []),
-      worker(Registry, [])
+      worker(GroupRegistry, []),
+      worker(RuleRegistry, [[adapter: adapter]])
     ]
 
     options = [strategy: :one_for_one, name: Flippant.Supervisor]
@@ -18,21 +18,20 @@ defmodule Flippant do
     Supervisor.start_link(children, options)
   end
 
-  defdelegate [register(group, fun), registered], to: Registry
+  defdelegate [add(feature),
+               breakdown(actor),
+               enable(feature, group),
+               enable(feature, group, values),
+               enabled?(feature, actor),
+               disable(feature, group),
+               features,
+               features(group),
+               remove(feature)], to: RuleRegistry
 
-  Adapter.defdelegate [
-    add(feature),
-    breakdown(actor),
-    enable(feature, group),
-    enable(feature, group, values),
-    enabled?(feature, actor),
-    disable(feature, group),
-    features,
-    features(group),
-    remove(feature)
-  ]
+  defdelegate [register(group, fun),
+               registered], to: GroupRegistry
 
   def reset! do
-    Adapter.adapter.clear && Registry.clear
+    GroupRegistry.clear && RuleRegistry.clear
   end
 end

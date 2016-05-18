@@ -1,55 +1,17 @@
 defmodule Flippant.Adapter.Redis do
   use GenServer
 
+  import Flippant.Rules, only: [enabled_for_actor?: 2]
+
   @feature_key "flippant-features"
 
-  @behaviour Flippant.Adapter
-
-  def start_link do
-    GenServer.start_link(__MODULE__, :ok, [name: __MODULE__])
-  end
-
-  def add(feature) when is_binary(feature) do
-    GenServer.cast(adapter, {:add, feature})
-  end
-
-  def breakdown(actor) do
-    GenServer.call(adapter, {:breakdown, actor})
-  end
-
-  def clear do
-    GenServer.cast(adapter, :clear)
-  end
-
-  def disable(feature, group)
-      when is_binary(feature)
-      when is_binary(group) do
-
-    GenServer.cast(adapter, {:remove, feature, group})
-  end
-
-  def enable(feature, group, values \\ true)
-      when is_binary(feature)
-      when is_binary(group) do
-
-    GenServer.cast(adapter, {:add, feature, {group, values}})
-  end
-
-  def enabled?(feature, actor) when is_binary(feature) do
-    GenServer.call(adapter, {:enabled?, feature, actor})
-  end
-
-  def features(group \\ :all) do
-    GenServer.call(adapter, {:features, group})
-  end
-
-  def remove(feature) when is_binary(feature) do
-    GenServer.cast(adapter, {:remove, feature})
+  def start_link(options) do
+    GenServer.start_link(__MODULE__, options, [name: __MODULE__])
   end
 
   # Callbacks
 
-  def init(:ok) do
+  def init(_options) do
     Redix.start_link
   end
 
@@ -101,7 +63,7 @@ defmodule Flippant.Adapter.Redis do
       features
       |> Enum.zip(results)
       |> Enum.reduce(%{}, fn({feature, rules}, acc) ->
-          Map.put(acc, feature, matches_any_rules?(decode_rules(rules), actor))
+          Map.put(acc, feature, enabled_for_actor?(decode_rules(rules), actor))
          end)
 
     {:reply, breakdown, conn}
@@ -112,7 +74,7 @@ defmodule Flippant.Adapter.Redis do
     enabled =
       rules
       |> decode_rules()
-      |> matches_any_rules?(actor)
+      |> enabled_for_actor?(actor)
 
     {:reply, enabled, conn}
   end
@@ -138,27 +100,10 @@ defmodule Flippant.Adapter.Redis do
     {:reply, features, conn}
   end
 
-  # Helpers
-
-  defp adapter do
-    Process.whereis(__MODULE__)
-  end
-
   defp decode_rules(rules) do
     rules
     |> Enum.chunk(2)
     |> Enum.map(fn [key, val] -> {key, :erlang.binary_to_term(val)} end)
     |> Enum.into(%{})
-  end
-
-  # TODO: This is identical, extract it
-  defp matches_any_rules?(rules, actor) do
-    registered = Flippant.registered
-
-    Enum.any?(rules, fn {group, values} ->
-      if fun = Map.get(registered, group) do
-        apply(fun, [actor, values])
-      end
-    end)
   end
 end

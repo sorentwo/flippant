@@ -1,4 +1,4 @@
-defmodule Flippant.Registry do
+defmodule Flippant.GroupRegistry do
   def start_link do
     Agent.start_link(fn -> MapSet.new end, name: __MODULE__)
   end
@@ -15,6 +15,6 @@ defmodule Flippant.Registry do
   end
 
   def registered do
-    Agent.get(__MODULE__, &(Enum.into(&1, %{})))
+    Agent.get(__MODULE__, & Enum.into(&1, %{}))
   end
 end
