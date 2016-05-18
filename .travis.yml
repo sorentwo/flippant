@@ -6,3 +6,5 @@ otp_release:
 sudo: false
 script:
   - mix test
+services:
+  - redis-server
