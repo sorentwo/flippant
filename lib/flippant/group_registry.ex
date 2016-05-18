@@ -7,10 +7,9 @@ defmodule Flippant.GroupRegistry do
     Agent.update(__MODULE__, fn(_) -> MapSet.new end)
   end
 
-  def register(group, fun) when is_atom(group) do
-    register(Atom.to_string(group), fun)
-  end
-  def register(group, fun) do
+  def register(group, fun)
+      when is_binary(group)
+      when is_function(fun) do
     Agent.update(__MODULE__, &MapSet.put(&1, {group, fun}))
   end
 

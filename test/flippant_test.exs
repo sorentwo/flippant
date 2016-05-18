@@ -1,30 +1,27 @@
-defmodule FlippantTest do
-  use ExUnit.Case
+for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
+  defmodule Module.concat(adapter, Test) do
+    use ExUnit.Case
 
-  alias Flippant.Adapter.{Memory, Redis}
+    @adapter adapter
+    @moduletag adapter: adapter
 
-  for adapter <- [Memory, Redis] do
     setup_all do
       Logger.configure level: :warn
 
-      :ok
-    end
-
-    setup %{adapter: adapter} do
-      Application.put_env(:flippant, :adapter, adapter)
+      Application.stop(:flippant)
+      Application.put_env(:flippant, :adapter, @adapter)
       Application.ensure_started(:flippant)
 
-      on_exit fn ->
-        Application.stop(:flippant)
-      end
+      :ok
+    end
 
-      Flippant.reset!
+    setup do
+      Flippant.reset
 
       :ok
     end
 
-    @tag adapter: adapter
-    test "#{adapter} add/1 adds to the list of known features" do
+    test "add/1 adds to the list of known features" do
       Flippant.add("search")
       Flippant.add("search")
       Flippant.add("delete")
@@ -32,20 +29,18 @@ defmodule FlippantTest do
       assert Flippant.features == ["delete", "search"]
     end
 
-    @tag adapter: adapter
-    test "#{adapter} reset!/0 removes all known features" do
+    test "reset/0 removes all known features" do
       Flippant.add("search")
       Flippant.add("delete")
       Flippant.register("awesome", fn(_, _) -> true end)
 
-      Flippant.reset!
+      Flippant.reset
 
       assert Flippant.features == []
       assert Flippant.registered == %{}
     end
 
-    @tag adapter: adapter
-    test "#{adapter} remove/1 removes a specific feature" do
+    test "remove/1 removes a specific feature" do
       Flippant.add("search")
       Flippant.add("delete")
       Flippant.remove("search")
@@ -53,8 +48,7 @@ defmodule FlippantTest do
       assert Flippant.features == ["delete"]
     end
 
-    @tag adapter: adapter
-    test "#{adapter} enable/3 adds a feature rule for a group" do
+    test "enable/3 adds a feature rule for a group" do
       Flippant.enable("search", "staff", true)
       Flippant.enable("search", "users", false)
       Flippant.enable("delete", "staff")
@@ -64,8 +58,7 @@ defmodule FlippantTest do
       assert Flippant.features("users") == ["search"]
     end
 
-    @tag adapter: adapter
-    test "#{adapter} disable/2 disables a feature for a group" do
+    test "disable/2 disables a feature for a group" do
       Flippant.enable("search", "staff", true)
       Flippant.enable("search", "users", false)
 
@@ -76,8 +69,7 @@ defmodule FlippantTest do
       assert Flippant.features("users") == []
     end
 
-    @tag adapter: adapter
-    test "#{adapter} enabled?/2 checks a feature for an actor" do
+    test "enabled?/2 checks a feature for an actor" do
       Flippant.register("staff", fn(actor, _values) -> actor.staff? end)
 
       actor_a = %{id: 1, staff?: true}
@@ -92,10 +84,9 @@ defmodule FlippantTest do
       refute Flippant.enabled?("search", actor_b)
     end
 
-    @tag adapter: adapter
-    test "#{adapter} enabled?/2 checks for a feature against multiple groups" do
-      Flippant.register(:awesome, fn(actor, _) -> actor.awesome? end)
-      Flippant.register(:radical, fn(actor, _) -> actor.radical? end)
+    test "enabled?/2 checks for a feature against multiple groups" do
+      Flippant.register("awesome", fn(actor, _) -> actor.awesome? end)
+      Flippant.register("radical", fn(actor, _) -> actor.radical? end)
 
       actor_a = %{id: 1, awesome?: true, radical?: false}
       actor_b = %{id: 2, awesome?: false, radical?: true}
@@ -109,9 +100,8 @@ defmodule FlippantTest do
       refute Flippant.enabled?("search", actor_c)
     end
 
-    @tag adapter: adapter
-    test "#{adapter} enabled?/2 uses rule values when checking" do
-      Flippant.register(:awesome, fn(actor, ids) -> actor.id in ids end)
+    test "enabled?/2 uses rule values when checking" do
+      Flippant.register("awesome", fn(actor, ids) -> actor.id in ids end)
 
       actor_a = %{id: 1}
       actor_b = %{id: 5}
@@ -122,11 +112,10 @@ defmodule FlippantTest do
       refute Flippant.enabled?("search", actor_b)
     end
 
-    @tag adapter: adapter
-    test "#{adapter} breakdown/1 lists all enabled features for an actor" do
-      Flippant.register(:awesome, fn(actor, _) -> actor.awesome? end)
-      Flippant.register(:radical, fn(actor, _) -> actor.radical? end)
-      Flippant.register(:heinous, fn(actor, _) -> !actor.awesome? end)
+    test "breakdown/1 lists all enabled features for an actor" do
+      Flippant.register("awesome", fn(actor, _) -> actor.awesome? end)
+      Flippant.register("radical", fn(actor, _) -> actor.radical? end)
+      Flippant.register("heinous", fn(actor, _) -> !actor.awesome? end)
 
       actor = %{id: 1, awesome?: true, radical?: true}
 

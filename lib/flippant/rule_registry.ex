@@ -4,7 +4,7 @@ defmodule Flippant.RuleRegistry do
   def start_link(options) do
     adapter = Keyword.fetch!(options, :adapter)
 
-    adapter.start_link
+    adapter.start_link(options)
   end
 
   def add(feature) when is_binary(feature) do

@@ -31,7 +31,7 @@ defmodule Flippant do
   defdelegate [register(group, fun),
                registered], to: GroupRegistry
 
-  def reset! do
+  def reset do
     GroupRegistry.clear && RuleRegistry.clear
   end
 end
