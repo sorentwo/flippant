@@ -2,6 +2,7 @@ defmodule Flippant.Adapter.Redis do
   use GenServer
 
   import Flippant.Rules, only: [enabled_for_actor?: 2]
+  import Redix, only: [command: 2, pipeline: 2]
 
   @feature_key "flippant-features"
 
@@ -16,60 +17,57 @@ defmodule Flippant.Adapter.Redis do
   end
 
   def handle_cast({:add, feature}, conn) do
-    {:ok, _} = Redix.command(conn, ["SADD", @feature_key, feature])
+    {:ok, _} = command(conn, ["SADD", @feature_key, feature])
 
     {:noreply, conn}
   end
   def handle_cast({:add, feature, {group, values}}, conn) do
     values = :erlang.term_to_binary(values)
 
-    Redix.pipeline(conn, [["SADD", @feature_key, feature],
-                          ["HSET", feature, group, values]])
+    pipeline(conn, [["SADD", @feature_key, feature],
+                    ["HSET", feature, group, values]])
 
     {:noreply, conn}
   end
 
   def handle_cast(:clear, conn) do
-    with {:ok, features} <- Redix.command(conn, ["SMEMBERS", @feature_key]),
-         {:ok, _count}   <- Redix.command(conn, ["DEL", @feature_key] ++ features),
-     do: :ok
+    {:ok, _} = command(conn, ["DEL", @feature_key] ++ fetch_features(conn))
 
     {:noreply, conn}
   end
 
   def handle_cast({:remove, feature}, conn) do
-    Redix.pipeline(conn, [["SREM", @feature_key, feature],
-                          ["DEL", feature]])
+    pipeline(conn, [["SREM", @feature_key, feature],
+                    ["DEL", feature]])
 
     {:noreply, conn}
   end
   def handle_cast({:remove, feature, group}, conn) do
-    with {:ok, _}  <- Redix.command(conn, ["HDEL", feature, group]),
-         {:ok, []} <- Redix.command(conn, ["HGETALL", feature]),
-         {:ok, _}  <- Redix.command(conn, ["SREM", @feature_key, feature]),
+    with {:ok, _}  <- command(conn, ["HDEL", feature, group]),
+         {:ok, []} <- command(conn, ["HGETALL", feature]),
+         {:ok, _}  <- command(conn, ["SREM", @feature_key, feature]),
      do: :ok
 
     {:noreply, conn}
   end
 
   def handle_call({:breakdown, actor}, _from, conn) do
-    {:ok, features} = Redix.command(conn, ["SMEMBERS", @feature_key])
+    features = fetch_features(conn)
+    requests = Enum.map(features, &(["HGETALL", &1]))
 
-    requests = Enum.map(features, & ["HGETALL", &1])
-
-    {:ok, results} = Redix.pipeline(conn, requests)
+    {:ok, results} = pipeline(conn, requests)
 
     breakdown =
       features
       |> Enum.zip(results)
       |> Enum.reduce(%{}, fn({feature, rules}, acc) ->
-          Map.put(acc, feature, enabled_for_actor?(decode_rules(rules), actor))
+           Map.put(acc, feature, enabled_for_actor?(decode_rules(rules), actor))
          end)
 
     {:reply, breakdown, conn}
   end
   def handle_call({:enabled?, feature, actor}, _from, conn) do
-    {:ok, rules} = Redix.command(conn, ["HGETALL", feature])
+    {:ok, rules} = command(conn, ["HGETALL", feature])
 
     enabled =
       rules
@@ -80,30 +78,34 @@ defmodule Flippant.Adapter.Redis do
   end
 
   def handle_call({:features, :all}, _from, conn) do
-    {:ok, features} = Redix.command(conn, ["SMEMBERS", @feature_key])
-
-    {:reply, features, conn}
+    {:reply, fetch_features(conn), conn}
   end
   def handle_call({:features, group}, _from, conn) do
-    {:ok, features} = Redix.command(conn, ["SMEMBERS", @feature_key])
+    features = fetch_features(conn)
+    requests = Enum.map(features, &(["HEXISTS", &1, group]))
 
-    requests = Enum.map(features, & ["HEXISTS", &1, group])
-
-    {:ok, results} = Redix.pipeline(conn, requests)
+    {:ok, results} = pipeline(conn, requests)
 
     features =
       features
       |> Enum.zip(results)
-      |> Enum.reject(& elem(&1, 1) == 0)
-      |> Enum.map(& elem(&1, 0))
+      |> Enum.filter_map(&(elem(&1, 1) == 1), &(elem(&1, 0)))
 
     {:reply, features, conn}
   end
+
+  # Helpers
 
   defp decode_rules(rules) do
     rules
     |> Enum.chunk(2)
     |> Enum.map(fn [key, val] -> {key, :erlang.binary_to_term(val)} end)
     |> Enum.into(%{})
+  end
+
+  defp fetch_features(conn) do
+    {:ok, features} = command(conn, ["SMEMBERS", @feature_key])
+
+    features
   end
 end
