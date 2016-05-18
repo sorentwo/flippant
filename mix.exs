@@ -12,11 +12,11 @@ defmodule Flippant.Mixfile do
 
   def application do
     [applications: [:logger],
-     env: [adapter: Flippant.Adapters.Memory],
+     env: [adapter: Flippant.Adapter.Memory],
      mod: {Flippant, []}]
   end
 
   defp deps do
-    []
+    [{:redix, "~> 0.3", optional: true}]
   end
 end

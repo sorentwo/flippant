@@ -1,6 +1,16 @@
 defmodule Flippant.Adapter do
   import Kernel, except: [defdelegate: 2]
 
+  @callback add(String.t) :: :ok
+  @callback breakdown(any) :: Map.t
+  @callback enable(String.t, String.t) :: :ok
+  @callback enable(String.t, String.t, any) :: :ok
+  @callback enabled?(String.t, any) :: boolean
+  @callback disable(String.t, String.t) :: :ok
+  @callback features :: list
+  @callback features(String.t) :: list
+  @callback remove(String.t) :: :ok
+
   defmacro defdelegate(funs) do
     funs = Macro.escape(funs, unquote: true)
 

@@ -1,0 +1,2 @@
+%{"connection": {:hex, :connection, "1.0.2"},
+  "redix": {:hex, :redix, "0.3.6"}}

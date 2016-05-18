@@ -1,5 +1,7 @@
-defmodule Flippant.Adapters.Memory do
+defmodule Flippant.Adapter.Memory do
   use GenServer
+
+  @behaviour Flippant.Adapter
 
   def start_link do
     GenServer.start_link(__MODULE__, :ok, [name: __MODULE__])
