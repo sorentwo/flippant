@@ -1,6 +1,6 @@
 # Flippant
 
-**TODO: Add description**
+Groups, rules, and features.
 
 ## Installation
 
@@ -18,3 +18,6 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
           [applications: [:flippant]]
         end
 
+## License
+
+MIT License, see [LICENSE.txt](LICENSE.txt) for details.
