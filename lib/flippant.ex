@@ -18,18 +18,18 @@ defmodule Flippant do
     Supervisor.start_link(children, opts)
   end
 
-  defdelegate [add(feature),
-               breakdown(actor),
-               enable(feature, group),
-               enable(feature, group, values),
-               enabled?(feature, actor),
-               disable(feature, group),
-               features,
-               features(group),
-               remove(feature)], to: RuleRegistry
+  defdelegate add(feature), to: RuleRegistry
+  defdelegate breakdown(actor), to: RuleRegistry
+  defdelegate enable(feature, group), to: RuleRegistry
+  defdelegate enable(feature, group, values), to: RuleRegistry
+  defdelegate enabled?(feature, actor), to: RuleRegistry
+  defdelegate disable(feature, group), to: RuleRegistry
+  defdelegate features, to: RuleRegistry
+  defdelegate features(group), to: RuleRegistry
+  defdelegate remove(feature), to: RuleRegistry
 
-  defdelegate [register(group, fun),
-               registered], to: GroupRegistry
+  defdelegate register(group, fun), to: GroupRegistry
+  defdelegate registered, to: GroupRegistry
 
   def reset do
     GroupRegistry.clear && RuleRegistry.clear
