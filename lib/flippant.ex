@@ -6,16 +6,16 @@ defmodule Flippant do
   def start(_, _) do
     import Supervisor.Spec
 
-    adapter = Application.get_env(:flippant, :adapter)
+    flippant_opts = Application.get_all_env(:flippant)
 
     children = [
       worker(GroupRegistry, []),
-      worker(RuleRegistry, [[adapter: adapter]])
+      worker(RuleRegistry, [flippant_opts])
     ]
 
-    options = [strategy: :one_for_one, name: Flippant.Supervisor]
+    opts = [strategy: :one_for_one, name: Flippant.Supervisor]
 
-    Supervisor.start_link(children, options)
+    Supervisor.start_link(children, opts)
   end
 
   defdelegate [add(feature),

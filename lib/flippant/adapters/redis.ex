@@ -12,8 +12,10 @@ defmodule Flippant.Adapter.Redis do
 
   # Callbacks
 
-  def init(_options) do
-    Redix.start_link
+  def init(opts) do
+    redis_opts = Keyword.get(opts, :redis_opts, [])
+
+    Redix.start_link(redis_opts)
   end
 
   def handle_cast({:add, feature}, conn) do
