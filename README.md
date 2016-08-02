@@ -6,28 +6,28 @@ Fast feature toggling for Elixir applications, backed by Redis.
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
 
-1. Add flippant and redix to your list of dependencies in `mix.exs`:
+  1. Add flippant and redix to your list of dependencies in `mix.exs`:
 
-```elixir
-def deps do
-  [{:flippant, "~> 0.1"},
-   {:redix, "~> 0.4"}]
-end
-```
+    ```elixir
+    def deps do
+      [{:flippant, "~> 0.1"},
+       {:redix, "~> 0.4"}]
+    end
+    ```
 
-2. Ensure flippant and redix is started before your application:
+  2. Ensure flippant and redix is started before your application:
 
-```elixir
-def application do
-  [applications: [:redix, :flippant]]
-end
-```
+    ```elixir
+    def application do
+      [applications: [:redix, :flippant]]
+    end
+    ```
 
-3. Set an adapter within your `config.exs`:
+  3. Set an adapter within your `config.exs`:
 
-```elixir
-config :flippant, adapter: Flippant.Adapters.Redix
-```
+    ```elixir
+    config :flippant, adapter: Flippant.Adapters.Redix
+    ```
 
 ## Usage
 
