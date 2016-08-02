@@ -3,8 +3,8 @@ defmodule Flippant.Mixfile do
 
   def project do
     [app: :flippant,
-     version: "0.0.1",
-     elixir: "~> 1.2",
+     version: "0.1.0",
+     elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps]
@@ -17,6 +17,6 @@ defmodule Flippant.Mixfile do
   end
 
   defp deps do
-    [{:redix, "~> 0.3", optional: true}]
+    [{:redix, "~> 0.4"}]
   end
 end
