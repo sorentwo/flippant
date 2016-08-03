@@ -47,9 +47,6 @@ functions from a web interface isn't wise).
 
 ### Groups
 
-You'll want to put group definitions in `config.exs`, or in another module that
-is executed on start.
-
 First, a group that nobody can belong to. This is useful for disabling a feature
 without deleting it:
 
@@ -155,6 +152,49 @@ Flippant.breakdown(%User{id: 1, staff?: true}) #=> %{
 The breakdown is a simple map of binary keys to boolean values. This is
 extremely handy for single page applications where you can serialize the
 breakdown on boot or send it back from an endpoint as JSON.
+
+## Configuring Groups
+
+Group definitions are stored in a process, which requires the Flippant
+application to be started. That means they can't be defined within a
+configuration file and should instead be linked from `Application.start/2`.
+You can make `Flippant.register/2` calls directly from the application
+module, or put them into a separate module and start it as a temporary worker.
+
+```elixir
+defmodule MyApp do
+  use Application
+
+  def start(_type, _args) do
+    import Supervisor.Spec, warn: false
+
+    children = [
+      worker(MyApp.Flippant, [], restart: :temporary)
+    ]
+
+    opts = [strategy: :one_for_one, name: MyApp.Supervisor]
+
+    Supervisor.start_link(children, opts)
+  end
+end
+```
+
+Here you can see the worker was defined with `restart: :temporary`. Now, within
+the `MyApp.Flippant` module:
+
+```elixir
+defmodule MyApp.Flippant do
+  def start_link do
+    Flippant.register("nobody", &nobody?/2)
+    Flippant.register("everybody", &everybody?/2)
+
+    :ignore
+  end
+
+  def nobody?(_, _), do: false
+  def everybody?(_, _), do: true
+end
+```
 
 ## Testing
 
