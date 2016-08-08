@@ -2,8 +2,8 @@ defmodule Flippant.Adapter.Redis do
   use GenServer
 
   import Flippant.Rules, only: [enabled_for_actor?: 2]
-  import Redix, only: [command: 2, pipeline: 2]
   import Flippant.Serializer, only: [dump: 1, load: 1]
+  import Redix, only: [command: 2, pipeline: 2]
 
   @feature_key "flippant-features"
 
@@ -16,7 +16,7 @@ defmodule Flippant.Adapter.Redis do
   def init(opts) do
     redis_opts = Keyword.get(opts, :redis_opts, [])
 
-    Redix.start_link(redis_opts)
+    parse_opts_and_connect(redis_opts)
   end
 
   def handle_cast({:add, feature}, conn) do
@@ -108,5 +108,13 @@ defmodule Flippant.Adapter.Redis do
     {:ok, features} = command(conn, ["SMEMBERS", @feature_key])
 
     features
+  end
+
+  defp parse_opts_and_connect(opts) do
+    if url = Keyword.get(opts, :url) do
+      Redix.start_link(url, Keyword.delete(opts, :url))
+    else
+      Redix.start_link(opts)
+    end
   end
 end
