@@ -9,7 +9,7 @@ defmodule Flippant.GroupRegistry do
 
   def register(group, fun)
       when is_binary(group)
-      when is_function(fun) do
+      when is_function(fun, 2) do
     Agent.update(__MODULE__, &MapSet.put(&1, {group, fun}))
   end
 
