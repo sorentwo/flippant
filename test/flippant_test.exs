@@ -112,23 +112,29 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       refute Flippant.enabled?("search", actor_b)
     end
 
-    test "breakdown/1 lists all enabled features for an actor" do
-      Flippant.register("awesome", fn(actor, _) -> actor.awesome? end)
-      Flippant.register("radical", fn(actor, _) -> actor.radical? end)
-      Flippant.register("heinous", fn(actor, _) -> !actor.awesome? end)
+    describe "breakdown/1" do
+      test "it works without any features" do
+        assert Flippant.breakdown(%{id: 1}) == %{}
+      end
 
-      actor = %{id: 1, awesome?: true, radical?: true}
+      test "it lists all enabled features for an actor" do
+        Flippant.register("awesome", fn(actor, _) -> actor.awesome? end)
+        Flippant.register("radical", fn(actor, _) -> actor.radical? end)
+        Flippant.register("heinous", fn(actor, _) -> !actor.awesome? end)
 
-      Flippant.enable("search", "awesome")
-      Flippant.enable("search", "heinous")
-      Flippant.enable("delete", "radical")
-      Flippant.enable("invite", "heinous")
+        actor = %{id: 1, awesome?: true, radical?: true}
 
-      assert Flippant.breakdown(actor) == %{
-        "search" => true,
-        "delete" => true,
-        "invite" => false
-      }
+        Flippant.enable("search", "awesome")
+        Flippant.enable("search", "heinous")
+        Flippant.enable("delete", "radical")
+        Flippant.enable("invite", "heinous")
+
+        assert Flippant.breakdown(actor) == %{
+          "search" => true,
+          "delete" => true,
+          "invite" => false
+        }
+      end
     end
   end
 end

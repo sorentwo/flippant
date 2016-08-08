@@ -56,7 +56,10 @@ defmodule Flippant.Adapter.Redis do
     features = fetch_features(conn)
     requests = Enum.map(features, &(["HGETALL", &1]))
 
-    {:ok, results} = pipeline(conn, requests)
+    {:ok, results} = case requests do
+      [] -> {:ok, []}
+       _ -> pipeline(conn, requests)
+    end
 
     breakdown =
       features
