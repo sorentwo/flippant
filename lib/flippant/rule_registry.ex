@@ -1,6 +1,8 @@
 defmodule Flippant.RuleRegistry do
   alias Flippant.Adapter
 
+  defdelegate adapter, to: Adapter
+
   def start_link(options) do
     adapter = Keyword.fetch!(options, :adapter)
 
@@ -43,9 +45,5 @@ defmodule Flippant.RuleRegistry do
 
   def remove(feature) when is_binary(feature) do
     GenServer.cast(adapter, {:remove, feature})
-  end
-
-  defp adapter do
-    Adapter.adapter
   end
 end

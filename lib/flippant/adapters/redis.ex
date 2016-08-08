@@ -3,6 +3,7 @@ defmodule Flippant.Adapter.Redis do
 
   import Flippant.Rules, only: [enabled_for_actor?: 2]
   import Redix, only: [command: 2, pipeline: 2]
+  import Flippant.Serializer, only: [dump: 1, load: 1]
 
   @feature_key "flippant-features"
 
@@ -23,11 +24,9 @@ defmodule Flippant.Adapter.Redis do
 
     {:noreply, conn}
   end
-  def handle_cast({:add, feature, {group, values}}, conn) do
-    values = :erlang.term_to_binary(values)
-
+  def handle_cast({:add, feature, {group, value}}, conn) do
     pipeline(conn, [["SADD", @feature_key, feature],
-                    ["HSET", feature, group, values]])
+                    ["HSET", feature, group, dump(value)]])
 
     {:noreply, conn}
   end
@@ -101,7 +100,7 @@ defmodule Flippant.Adapter.Redis do
   defp decode_rules(rules) do
     rules
     |> Enum.chunk(2)
-    |> Enum.map(fn [key, val] -> {key, :erlang.binary_to_term(val)} end)
+    |> Enum.map(fn [key, value] -> {key, load(value)} end)
     |> Enum.into(%{})
   end
 

@@ -208,6 +208,36 @@ config :flippant, adapter: Flippant.Adapters.Memory
 The memory adapter behaves identically but will clear out whenever the
 application is restarted.
 
+## Customizing Value Serialization
+
+As seen above in [Usage][], it is possible to store a value along with a rule.
+Values can be any type of data structure, including lists, maps, or even
+modules. This adds a great deal of additional power to group evaluation, but it
+means that the values must be serialized in a high fidelity way.
+
+By default, values are stored using Erlang's [binary term storage][btt]. This
+works perfectly fine, but isn't especially readable and isn't compatible with
+other languages. If you'd prefer to use `JSON` or `MessagePack` instead you can
+provide a custom serializer and configure Flippant to use that instead. For
+example, to use MessagePack via the `Msgpax` libary:
+
+```elixir
+defmodule MyApp.Serializer do
+  @behaviour Flippant.Serializer
+
+  def dump(value), do: Msgpax.pack!(value)
+  def load(value), do: Msgpax.unpack!(value)
+end
+```
+
+Then, within `config.exs` set the serializer:
+
+```elixir
+config :flippant, serializer: MyApp.Serializer
+```
+
+[btt]: http://erlang.org/doc/man/erlang.html#binary_to_term-1
+
 ## License
 
 MIT License, see [LICENSE.txt](LICENSE.txt) for details.
