@@ -2,7 +2,7 @@ defmodule Flippant.SerializerTest do
   use ExUnit.Case, async: true
 
   alias Flippant.Serializer
-  alias Flippant.Serializers.Term
+  alias Flippant.Serializer.Term
 
   describe "serializer/0" do
     test "defaults to term storage" do

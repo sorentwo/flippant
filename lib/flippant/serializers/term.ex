@@ -1,4 +1,4 @@
-defmodule Flippant.Serializers.Term do
+defmodule Flippant.Serializer.Term do
   @moduledoc """
   Serialize values using Erlang's binary term storage.
   """

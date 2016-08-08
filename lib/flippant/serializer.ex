@@ -15,7 +15,7 @@ defmodule Flippant.Serializer do
   @callback dump(value :: any) :: binary
   @callback load(value :: binary) :: any
 
-  alias Flippant.Serializers.Term
+  alias Flippant.Serializer.Term
 
   @doc """
   Delegates dumping a value to the configured serializer.
