@@ -3,7 +3,7 @@ defmodule Flippant.Adapter.Redis do
 
   import Flippant.Rules, only: [enabled_for_actor?: 2]
   import Flippant.Serializer, only: [dump: 1, load: 1]
-  import Redix, only: [command: 2]
+  import Redix, only: [command!: 2]
 
   @feature_key "flippant-features"
 
@@ -20,33 +20,33 @@ defmodule Flippant.Adapter.Redis do
   end
 
   def handle_cast({:add, feature}, conn) do
-    {:ok, _} = command(conn, ["SADD", @feature_key, feature])
+    command!(conn, ["SADD", @feature_key, feature])
 
     {:noreply, conn}
   end
   def handle_cast({:add, feature, {group, value}}, conn) do
-    pipeline(conn, [["SADD", @feature_key, feature],
+    pipeline!(conn, [["SADD", @feature_key, feature],
                     ["HSET", feature, group, dump(value)]])
 
     {:noreply, conn}
   end
 
   def handle_cast(:clear, conn) do
-    {:ok, _} = command(conn, ["DEL", @feature_key] ++ fetch_features(conn))
+    command!(conn, ["DEL", @feature_key] ++ fetch_features(conn))
 
     {:noreply, conn}
   end
 
   def handle_cast({:remove, feature}, conn) do
-    pipeline(conn, [["SREM", @feature_key, feature],
+    pipeline!(conn, [["SREM", @feature_key, feature],
                     ["DEL", feature]])
 
     {:noreply, conn}
   end
   def handle_cast({:remove, feature, group}, conn) do
-    with {:ok, _}  <- command(conn, ["HDEL", feature, group]),
-         {:ok, []} <- command(conn, ["HGETALL", feature]),
-         {:ok, _}  <- command(conn, ["SREM", @feature_key, feature]),
+    with _count <- command!(conn, ["HDEL", feature, group]),
+             [] <- command!(conn, ["HGETALL", feature]),
+         _count <- command!(conn, ["SREM", @feature_key, feature]),
      do: :ok
 
     {:noreply, conn}
@@ -55,7 +55,7 @@ defmodule Flippant.Adapter.Redis do
   def handle_call({:breakdown, actor}, _from, conn) do
     features = fetch_features(conn)
     requests = Enum.map(features, &(["HGETALL", &1]))
-    results  = pipeline(conn, requests)
+    results  = pipeline!(conn, requests)
 
     breakdown =
       features
@@ -67,10 +67,9 @@ defmodule Flippant.Adapter.Redis do
     {:reply, breakdown, conn}
   end
   def handle_call({:enabled?, feature, actor}, _from, conn) do
-    {:ok, rules} = command(conn, ["HGETALL", feature])
-
     enabled =
-      rules
+      conn
+      |> command!(["HGETALL", feature])
       |> decode_rules()
       |> enabled_for_actor?(actor)
 
@@ -83,7 +82,7 @@ defmodule Flippant.Adapter.Redis do
   def handle_call({:features, group}, _from, conn) do
     features = fetch_features(conn)
     requests = Enum.map(features, &(["HEXISTS", &1, group]))
-    results  = pipeline(conn, requests)
+    results  = pipeline!(conn, requests)
 
     features =
       features
@@ -103,18 +102,15 @@ defmodule Flippant.Adapter.Redis do
   end
 
   defp fetch_features(conn) do
-    {:ok, features} = command(conn, ["SMEMBERS", @feature_key])
-
-    features
+    conn
+    |> command!(["SMEMBERS", @feature_key])
   end
 
-  defp pipeline(_conn, []) do
+  defp pipeline!(_conn, []) do
     []
   end
-  defp pipeline(conn, requests) do
-    {:ok, results} = Redix.pipeline(conn, requests)
-
-    results
+  defp pipeline!(conn, requests) do
+    Redix.pipeline!(conn, requests)
   end
 
   defp parse_opts_and_connect(opts) do
