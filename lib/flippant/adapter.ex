@@ -4,7 +4,7 @@ defmodule Flippant.Adapter do
   in their own process. The built in adapters are all GenServers, and therefor
   implement the GenServer behaviour.
 
-  For a breakdown of the expected calls and casts see Flippant.RuleRegistry
+  For a breakdown of the expected calls and casts see `Flippant.RuleRegistry`
   """
 
   @doc """
