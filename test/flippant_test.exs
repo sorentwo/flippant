@@ -26,7 +26,7 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       Flippant.add("search")
       Flippant.add("delete")
 
-      assert Flippant.features == ["delete", "search"]
+      assert Flippant.features() == ["delete", "search"]
     end
 
     test "reset/0 removes all known features" do
@@ -36,16 +36,20 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
 
       Flippant.reset
 
-      assert Flippant.features == []
-      assert Flippant.registered == %{}
+      assert Flippant.features() == []
+      assert Flippant.registered() == %{}
     end
 
     test "remove/1 removes a specific feature" do
       Flippant.add("search")
       Flippant.add("delete")
-      Flippant.remove("search")
 
-      assert Flippant.features == ["delete"]
+      Flippant.remove("search")
+      assert Flippant.features() == ["delete"]
+
+      Flippant.remove("delete")
+      assert Flippant.features() == []
+      assert Flippant.features("users") == []
     end
 
     test "enable/3 adds a feature rule for a group" do
@@ -53,7 +57,7 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       Flippant.enable("search", "users", false)
       Flippant.enable("delete", "staff")
 
-      assert Flippant.features == ["delete", "search"]
+      assert Flippant.features() == ["delete", "search"]
       assert Flippant.features("staff") == ["delete", "search"]
       assert Flippant.features("users") == ["search"]
     end
@@ -64,7 +68,7 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
 
       Flippant.disable("search", "users")
 
-      assert Flippant.features == ["search"]
+      assert Flippant.features() == ["search"]
       assert Flippant.features("staff") == ["search"]
       assert Flippant.features("users") == []
     end

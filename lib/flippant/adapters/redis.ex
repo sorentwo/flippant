@@ -3,7 +3,7 @@ defmodule Flippant.Adapter.Redis do
 
   import Flippant.Rules, only: [enabled_for_actor?: 2]
   import Flippant.Serializer, only: [dump: 1, load: 1]
-  import Redix, only: [command: 2, pipeline: 2]
+  import Redix, only: [command: 2]
 
   @feature_key "flippant-features"
 
@@ -55,11 +55,7 @@ defmodule Flippant.Adapter.Redis do
   def handle_call({:breakdown, actor}, _from, conn) do
     features = fetch_features(conn)
     requests = Enum.map(features, &(["HGETALL", &1]))
-
-    {:ok, results} = case requests do
-      [] -> {:ok, []}
-       _ -> pipeline(conn, requests)
-    end
+    results  = pipeline(conn, requests)
 
     breakdown =
       features
@@ -87,8 +83,7 @@ defmodule Flippant.Adapter.Redis do
   def handle_call({:features, group}, _from, conn) do
     features = fetch_features(conn)
     requests = Enum.map(features, &(["HEXISTS", &1, group]))
-
-    {:ok, results} = pipeline(conn, requests)
+    results  = pipeline(conn, requests)
 
     features =
       features
@@ -111,6 +106,15 @@ defmodule Flippant.Adapter.Redis do
     {:ok, features} = command(conn, ["SMEMBERS", @feature_key])
 
     features
+  end
+
+  defp pipeline(_conn, []) do
+    []
+  end
+  defp pipeline(conn, requests) do
+    {:ok, results} = Redix.pipeline(conn, requests)
+
+    results
   end
 
   defp parse_opts_and_connect(opts) do
