@@ -133,10 +133,14 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
         Flippant.enable("delete", "radical")
         Flippant.enable("invite", "heinous")
 
-        assert Flippant.breakdown(actor) == %{
-          "search" => true,
+        breakdown = Flippant.breakdown(actor)
+
+        assert Map.keys(breakdown) == ~w(delete invite search)
+
+        assert breakdown == %{
           "delete" => true,
-          "invite" => false
+          "invite" => false,
+          "search" => true
         }
       end
     end

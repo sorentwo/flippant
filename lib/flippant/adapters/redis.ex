@@ -104,6 +104,7 @@ defmodule Flippant.Adapter.Redis do
   defp fetch_features(conn) do
     conn
     |> command!(["SMEMBERS", @feature_key])
+    |> Enum.sort
   end
 
   defp pipeline!(_conn, []) do
