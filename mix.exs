@@ -42,7 +42,7 @@ defmodule Flippant.Mixfile do
   end
 
   defp deps do
-    [{:redix, "~> 0.4"},
+    [{:redix, "~> 0.4", optional: true},
      {:ex_doc, ">= 0.0.0", only: :dev}]
   end
 end
