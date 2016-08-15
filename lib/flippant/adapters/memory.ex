@@ -10,7 +10,7 @@ defmodule Flippant.Adapter.Memory do
   # Callbacks
 
   def init(_options) do
-    {:ok, :ets.new(:features, [])}
+    {:ok, :ets.new(:features, [read_concurrency: true])}
   end
 
   def handle_cast({:add, feature}, table) do
@@ -42,7 +42,7 @@ defmodule Flippant.Adapter.Memory do
   def handle_cast({:remove, feature, group}, table) do
     case :ets.lookup(table, feature) do
       [{_, rules}] -> :ets.insert(table, {feature, without_group(rules, group)})
-                   _ -> true
+                 _ -> true
     end
 
     {:noreply, table}
@@ -58,7 +58,7 @@ defmodule Flippant.Adapter.Memory do
   def handle_call({:enabled?, feature, actor}, _from, table) do
     enabled = case :ets.lookup(table, feature) do
       [{_, rules}] -> enabled_for_actor?(rules, actor)
-      [] -> false
+                [] -> false
     end
 
     {:reply, enabled, table}
