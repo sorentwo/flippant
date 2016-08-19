@@ -6,7 +6,7 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
     @moduletag adapter: adapter
 
     setup_all do
-      Logger.configure level: :warn
+      Logger.configure(level: :warn)
 
       Application.stop(:flippant)
       Application.put_env(:flippant, :adapter, @adapter)
@@ -16,7 +16,7 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
     end
 
     setup do
-      Flippant.reset
+      Flippant.clear()
 
       :ok
     end
@@ -29,14 +29,27 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       assert Flippant.features() == ["delete", "search"]
     end
 
-    test "reset/0 removes all known features" do
+    test "clear/0 removes all known groups and features" do
       Flippant.add("search")
-      Flippant.add("delete")
       Flippant.register("awesome", fn(_, _) -> true end)
 
-      Flippant.reset
+      Flippant.clear()
 
       assert Flippant.features() == []
+      assert Flippant.registered() == %{}
+    end
+
+    test "clear/1 removes either groups or features" do
+      Flippant.add("search")
+      Flippant.register("awesome", fn(_, _) -> true end)
+
+      Flippant.clear(:features)
+
+      assert Flippant.features() == []
+      refute Flippant.registered() == %{}
+
+      Flippant.clear(:groups)
+
       assert Flippant.registered() == %{}
     end
 

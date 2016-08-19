@@ -32,7 +32,30 @@ defmodule Flippant do
   defdelegate register(group, fun), to: GroupRegistry
   defdelegate registered, to: GroupRegistry
 
-  def reset do
-    GroupRegistry.clear && RuleRegistry.clear
-  end
+  @doc """
+  Purge all of the registered groups, features or both. This is particularly
+  useful in testing when you want to reset to a clean slate after a test.
+
+  ## Example
+
+  Clear everything:
+
+      iex> Flippant.clear()
+      :ok
+
+  Clear only features:
+
+      iex> Flippant.clear(:features)
+      :ok
+
+  Clear only groups:
+
+      iex> Flippant.clear(:groups)
+      :ok
+  """
+  @spec clear() :: :ok
+  @spec clear(atom) :: :ok
+  def clear(), do: clear(:groups) && clear(:features)
+  def clear(:features), do: RuleRegistry.clear
+  def clear(:groups),   do: GroupRegistry.clear
 end
