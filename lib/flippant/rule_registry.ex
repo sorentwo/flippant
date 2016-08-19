@@ -13,7 +13,7 @@ defmodule Flippant.RuleRegistry do
     GenServer.cast(adapter, {:add, feature})
   end
 
-  def breakdown(actor) do
+  def breakdown(actor \\ :all) do
     GenServer.call(adapter, {:breakdown, actor})
   end
 

@@ -50,7 +50,7 @@ defmodule Flippant.Adapter.Memory do
 
   def handle_call({:breakdown, actor}, _from, table) do
     fun = fn {feature, rules}, acc ->
-      Map.put(acc, feature, enabled_for_actor?(rules, actor))
+      Map.put(acc, feature, breakdown_value(rules, actor))
     end
 
     {:reply, :ets.foldl(fun, %{}, table), table}
@@ -68,6 +68,13 @@ defmodule Flippant.Adapter.Memory do
   end
 
   # Helpers
+
+  defp breakdown_value(rules, :all) do
+    Enum.into(rules, %{})
+  end
+  defp breakdown_value(rules, actor) do
+    enabled_for_actor?(rules, actor)
+  end
 
   defp get_features(table, :all) do
     table

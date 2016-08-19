@@ -116,6 +116,29 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       refute Flippant.enabled?("search", actor_b)
     end
 
+    describe "breakdown/0" do
+      test "it expands all groups and values" do
+        assert Flippant.breakdown() == %{}
+      end
+
+      test "it lists all features with their metadata" do
+        Flippant.register("awesome", fn(_, _) -> true end)
+        Flippant.register("radical", fn(_, _) -> false end)
+        Flippant.register("heinous", fn(_, _) -> false end)
+
+        Flippant.enable("search", "awesome")
+        Flippant.enable("search", "heinous", [1, 2])
+        Flippant.enable("delete", "radical")
+        Flippant.enable("invite", "heinous", [5, 6])
+
+        assert Flippant.breakdown() == %{
+          "search" => %{"awesome" => true, "heinous" => [1, 2]},
+          "delete" => %{"radical" => true},
+          "invite" => %{"heinous" => [5, 6]}
+        }
+      end
+    end
+
     describe "breakdown/1" do
       test "it works without any features" do
         assert Flippant.breakdown(%{id: 1}) == %{}

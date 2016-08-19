@@ -62,7 +62,7 @@ if Code.ensure_loaded?(Redix) do
         features
         |> Enum.zip(results)
         |> Enum.reduce(%{}, fn({feature, rules}, acc) ->
-             Map.put(acc, feature, enabled_for_actor?(decode_rules(rules), actor))
+             Map.put(acc, feature, breakdown_value(decode_rules(rules), actor))
            end)
 
       {:reply, breakdown, conn}
@@ -94,6 +94,13 @@ if Code.ensure_loaded?(Redix) do
     end
 
     # Helpers
+
+    defp breakdown_value(rules, :all) do
+      Enum.into(rules, %{})
+    end
+    defp breakdown_value(rules, actor) do
+      enabled_for_actor?(rules, actor)
+    end
 
     defp decode_rules(rules) do
       rules
