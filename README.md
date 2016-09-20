@@ -27,7 +27,7 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 
     ```elixir
     config :flippant,
-           adapter: Flippant.Adapters.Redis,
+           adapter: Flippant.Adapter.Redis,
            redis_opts: [url: System.get_env("REDIS_URL"), name: :flippant]
     ```
 
