@@ -9,7 +9,8 @@ defmodule Flippant.Serializer do
 
   ## Example
 
-      Application.put_env(:flippant, serializer: MySerializer)
+      iex> Application.put_env(:flippant, serializer: MySerializer)
+      :ok
   """
 
   @callback dump(value :: any) :: binary

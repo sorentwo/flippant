@@ -3,6 +3,9 @@ defmodule Flippant do
 
   alias Flippant.{GroupRegistry, RuleRegistry}
 
+  @doc """
+  Starts the Flippant application and supervision tree.
+  """
   def start(_, _) do
     import Supervisor.Spec
 
@@ -21,27 +24,37 @@ defmodule Flippant do
   defdelegate add(feature), to: RuleRegistry
   defdelegate breakdown(), to: RuleRegistry
   defdelegate breakdown(actor), to: RuleRegistry
+  defdelegate disable(feature, group), to: RuleRegistry
   defdelegate enable(feature, group), to: RuleRegistry
   defdelegate enable(feature, group, values), to: RuleRegistry
   defdelegate enabled?(feature, actor), to: RuleRegistry
-  defdelegate disable(feature, group), to: RuleRegistry
   defdelegate features(), to: RuleRegistry
   defdelegate features(group), to: RuleRegistry
+  defdelegate register(group, fun), to: GroupRegistry
+  defdelegate registered(), to: GroupRegistry
   defdelegate remove(feature), to: RuleRegistry
 
-  defdelegate register(group, fun), to: GroupRegistry
-  defdelegate registered, to: GroupRegistry
-
   @doc """
-  Purge all of the registered groups, features or both. This is particularly
-  useful in testing when you want to reset to a clean slate after a test.
+  Purge all of the registered groups and features. This is particularly useful
+  in testing when you want to reset to a clean slate after a test.
 
   ## Example
 
-  Clear everything:
-
       iex> Flippant.clear()
       :ok
+  """
+  @spec clear() :: :ok
+  def clear() do
+    clear(:groups)
+    clear(:features)
+
+    :ok
+  end
+
+  @doc """
+  Purge all of the registered groups or features.
+
+  ## Example
 
   Clear only features:
 
@@ -53,9 +66,7 @@ defmodule Flippant do
       iex> Flippant.clear(:groups)
       :ok
   """
-  @spec clear() :: :ok
-  @spec clear(atom) :: :ok
-  def clear(), do: clear(:groups) && clear(:features)
+  @spec clear(:features | :groups) :: :ok
   def clear(:features), do: RuleRegistry.clear
   def clear(:groups),   do: GroupRegistry.clear
 end

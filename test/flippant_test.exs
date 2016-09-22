@@ -22,9 +22,9 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
     end
 
     test "add/1 adds to the list of known features" do
-      Flippant.add("search")
-      Flippant.add("search")
-      Flippant.add("delete")
+      :ok = Flippant.add("search")
+      :ok = Flippant.add("search")
+      :ok = Flippant.add("delete")
 
       assert Flippant.features() == ["delete", "search"]
     end

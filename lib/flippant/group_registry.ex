@@ -5,26 +5,30 @@ defmodule Flippant.GroupRegistry do
   but it could be a company, a device, or any other entity that needs to be
   classified.
 
-  Using the example of a User some groups may be "nobody", "everbody", "admin",
-  "staff", etc. Each named group is coupled with a function that accepts two
-  arguments (the actor and optional values) and returns a boolean. When the
-  return value is `true`, the actor belongs to that group. If the value is
-  `false` then they aren't part of the group.
+  Using the example of a `User` some groups may be "nobody", "everbody",
+  "admin", "staff", etc. Each named group is coupled with a function that
+  accepts two arguments (the actor and optional values) and returns a boolean.
+  When the return value is `true`, the actor belongs to that group. If the
+  value is `false` then they aren't part of the group.
 
-  ## Examples
+  ## Example
 
-      Flippant.register("nobody", fn(_, _) -> false end)
-      Flippant.register("everybody", fn(_, _) -> true end)
+      iex> Flippant.register("nobody", fn(_, _) -> false end)
+      :ok
+
+      iex> Flippant.register("everybody", fn(_, _) -> true end)
+      :ok
 
   Group registry is stateful, and global to a Flippant instance. That means an actor
   can be evaulated against every group for every feature check. Be sure to add guards
   if you are mixing different types of actors.
 
-      Flippant.register("enterprise", fn
-                    nil, _values -> false
-                %User{}, _values -> false
-        %Company{id: id}, values -> id in values
-      end)
+      iex> Flippant.register("enterprise", fn
+      ...>               nil, _values -> false
+      ...>           %User{}, _values -> false
+      ...>   %Company{id: id}, values -> id in values
+      ...> end)
+      :ok
   """
 
   @doc """
@@ -38,6 +42,11 @@ defmodule Flippant.GroupRegistry do
   @doc """
   Clear all registered groups. Groups aren't persisted between app restart,
   making this is most useful for testing.
+
+  ## Example
+
+      iex> Flippant.GroupRegistry.clear()
+      :ok
   """
   @spec clear() :: :ok
   def clear do
@@ -54,6 +63,7 @@ defmodule Flippant.GroupRegistry do
 
       iex> Flippant.GroupRegistry.register("evens",
              fn(actor, _) -> rem(actor.id, 2) == 0 end)
+      :ok
   """
   @spec register(binary, fun) :: :ok
   def register(group, fun)
@@ -68,11 +78,11 @@ defmodule Flippant.GroupRegistry do
 
   ## Example
 
-    iex> Flippant.GroupRegistry.registered()
-    %{"staff" => #Function<20.50752066/0}
+      iex> Flippant.GroupRegistry.registered()
+      %{"staff" => #Function<20.50752066/0}
   """
-  @spec registered() :: Map.t
-  def registered do
+  @spec registered() :: map
+  def registered() do
     Agent.get(__MODULE__, & Enum.into(&1, %{}))
   end
 end
