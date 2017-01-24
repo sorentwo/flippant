@@ -28,6 +28,8 @@ defmodule Flippant do
   defdelegate enable(feature, group), to: RuleRegistry
   defdelegate enable(feature, group, values), to: RuleRegistry
   defdelegate enabled?(feature, actor), to: RuleRegistry
+  defdelegate exists?(feature), to: RuleRegistry
+  defdelegate exists?(feature, group), to: RuleRegistry
   defdelegate features(), to: RuleRegistry
   defdelegate features(group), to: RuleRegistry
   defdelegate register(group, fun), to: GroupRegistry

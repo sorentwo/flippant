@@ -175,6 +175,24 @@ defmodule Flippant.RuleRegistry do
   end
 
   @doc """
+  Check whether a given feature has been registered in the system. If a `group`
+  is also sent it will check whether the feature has any rules for that group.
+
+  ## Example
+
+      iex> Flippant.RuleRegistry.exists?("search")
+      false
+
+      iex> Flippant.RuleRegistry.add("search")
+      ...> Flippant.RuleRegistry.exists?("search")
+      true
+  """
+  @spec exists?(binary, binary | :any) :: boolean
+  def exists?(feature, group \\ :any) do
+    GenServer.call(adapter(), {:exists?, feature, group})
+  end
+
+  @doc """
   List all known features or only features enabled for a particular group.
 
   ## Example

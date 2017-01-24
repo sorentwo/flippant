@@ -132,6 +132,24 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       refute Flippant.enabled?("search", actor_b)
     end
 
+    describe "exists?/1" do
+      test "it checks whether a feature exists" do
+        Flippant.add("search")
+
+        assert Flippant.exists?("search")
+        refute Flippant.exists?("breach")
+      end
+    end
+
+    describe "exists?/2" do
+      test "it checks whether a feature and a group exist" do
+        Flippant.enable("search", "nobody")
+
+        assert Flippant.exists?("search", "nobody")
+        refute Flippant.exists?("search", "everybody")
+      end
+    end
+
     describe "breakdown/0" do
       test "it expands all groups and values" do
         assert Flippant.breakdown() == %{}

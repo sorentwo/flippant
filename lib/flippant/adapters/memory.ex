@@ -55,6 +55,7 @@ defmodule Flippant.Adapter.Memory do
 
     {:reply, :ets.foldl(fun, %{}, table), table}
   end
+
   def handle_call({:enabled?, feature, actor}, _from, table) do
     enabled = case :ets.lookup(table, feature) do
       [{_, rules}] -> enabled_for_actor?(rules, actor)
@@ -63,6 +64,16 @@ defmodule Flippant.Adapter.Memory do
 
     {:reply, enabled, table}
   end
+
+  def handle_call({:exists?, feature, group}, _from, table) do
+    exists = case :ets.lookup(table, feature) do
+      [{_, rules}] -> contains_group?(rules, group)
+                [] -> false
+    end
+
+    {:reply, exists, table}
+  end
+
   def handle_call({:features, group}, _from, table) do
     {:reply, get_features(table, group), table}
   end
@@ -74,6 +85,13 @@ defmodule Flippant.Adapter.Memory do
   end
   defp breakdown_value(rules, actor) do
     enabled_for_actor?(rules, actor)
+  end
+
+  defp contains_group?(rules, :any) do
+    true
+  end
+  defp contains_group?(rules, group) do
+    Enum.any?(rules, &(elem(&1, 0) == group))
   end
 
   defp get_features(table, :all) do

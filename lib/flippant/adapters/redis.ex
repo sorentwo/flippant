@@ -67,12 +67,24 @@ if Code.ensure_loaded?(Redix) do
 
       {:reply, breakdown, conn}
     end
+
     def handle_call({:enabled?, feature, actor}, _from, conn) do
       enabled =
         conn
         |> command!(["HGETALL", feature])
         |> decode_rules()
         |> enabled_for_actor?(actor)
+
+      {:reply, enabled, conn}
+    end
+
+    def handle_call({:exists?, feature, :any}, _from, conn) do
+      enabled = command!(conn, ["SISMEMBER", @feature_key, feature]) == 1
+
+      {:reply, enabled, conn}
+    end
+    def handle_call({:exists?, feature, group}, _from, conn) do
+      enabled = command!(conn, ["HEXISTS", feature, group]) == 1
 
       {:reply, enabled, conn}
     end
