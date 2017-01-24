@@ -6,14 +6,14 @@ defmodule Flippant.Mixfile do
   def project do
     [app: :flippant,
      version: @version,
-     elixir: "~> 1.3",
+     elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
 
-     description: description,
-     package: package,
+     description: description(),
+     package: package(),
 
-     deps: deps,
+     deps: deps(),
 
      name: "Flippant",
      source_url: "https://github.com/sorentwo/flippant",
@@ -30,7 +30,7 @@ defmodule Flippant.Mixfile do
 
   defp description do
     """
-    Fast feature toggling for applications, backed by Redis.
+    Fast feature toggling for applications, with plugable backends.
     """
   end
 
@@ -42,7 +42,7 @@ defmodule Flippant.Mixfile do
   end
 
   defp deps do
-    [{:redix, "~> 0.4", optional: true},
+    [{:redix, "~> 0.5", optional: true},
      {:ex_doc, ">= 0.0.0", only: :dev}]
   end
 end

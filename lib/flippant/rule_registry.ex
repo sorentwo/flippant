@@ -47,7 +47,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec add(binary) :: :ok
   def add(feature) when is_binary(feature) do
-    GenServer.cast(adapter, {:add, feature})
+    GenServer.cast(adapter(), {:add, feature})
   end
 
   @doc """
@@ -78,7 +78,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec breakdown(map | struct | :all) :: map
   def breakdown(actor \\ :all) do
-    GenServer.call(adapter, {:breakdown, actor})
+    GenServer.call(adapter(), {:breakdown, actor})
   end
 
   @doc """
@@ -91,7 +91,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec clear() :: :ok
   def clear do
-    GenServer.cast(adapter, :clear)
+    GenServer.cast(adapter(), :clear)
   end
 
   @doc """
@@ -110,7 +110,7 @@ defmodule Flippant.RuleRegistry do
       when is_binary(feature)
       when is_binary(group) do
 
-    GenServer.cast(adapter, {:remove, feature, group})
+    GenServer.cast(adapter(), {:remove, feature, group})
   end
 
   @doc """
@@ -123,7 +123,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec remove(binary) :: :ok
   def remove(feature) when is_binary(feature) do
-    GenServer.cast(adapter, {:remove, feature})
+    GenServer.cast(adapter(), {:remove, feature})
   end
 
   @doc """
@@ -157,7 +157,7 @@ defmodule Flippant.RuleRegistry do
       when is_binary(feature)
       when is_binary(group) do
 
-    GenServer.cast(adapter, {:add, feature, {group, values}})
+    GenServer.cast(adapter(), {:add, feature, {group, values}})
   end
 
   @doc """
@@ -171,7 +171,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec enabled?(binary, map | struct) :: boolean
   def enabled?(feature, actor) when is_binary(feature) do
-    GenServer.call(adapter, {:enabled?, feature, actor})
+    GenServer.call(adapter(), {:enabled?, feature, actor})
   end
 
   @doc """
@@ -194,7 +194,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec features(:all | binary) :: [binary]
   def features(group \\ :all) do
-    GenServer.call(adapter, {:features, group})
+    GenServer.call(adapter(), {:features, group})
   end
 
   @spec adapter() :: pid

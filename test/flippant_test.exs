@@ -33,6 +33,9 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       Flippant.add("search")
       Flippant.register("awesome", fn(_, _) -> true end)
 
+      assert Flippant.features() != []
+      assert Flippant.registered() != %{}
+
       Flippant.clear()
 
       assert Flippant.features() == []
