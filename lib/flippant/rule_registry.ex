@@ -152,8 +152,8 @@ defmodule Flippant.RuleRegistry do
       iex> Flippant.RuleRegistry.enable("search", "awesome", [1, 2, 3])
       :ok
   """
-  @spec enable(binary, binary, any) :: :ok
-  def enable(feature, group, values \\ true)
+  @spec enable(binary, binary, [any]) :: :ok
+  def enable(feature, group, values \\ [])
       when is_binary(feature)
       when is_binary(group) do
 

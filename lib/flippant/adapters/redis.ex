@@ -26,8 +26,11 @@ if Code.ensure_loaded?(Redix) do
       {:noreply, conn}
     end
     def handle_cast({:add, feature, {group, value}}, conn) do
+      old_values = command!(conn, ["HGET", feature, group])
+      new_values = merge_values(old_values, value)
+
       pipeline!(conn, [["SADD", @feature_key, feature],
-                      ["HSET", feature, group, dump(value)]])
+                      ["HSET", feature, group, new_values]])
 
       {:noreply, conn}
     end
@@ -125,6 +128,20 @@ if Code.ensure_loaded?(Redix) do
       conn
       |> command!(["SMEMBERS", @feature_key])
       |> Enum.sort
+    end
+
+    defp merge_values(nil, new_values) do
+      dump(new_values)
+    end
+    defp merge_values(old_values, []) do
+      old_values
+    end
+    defp merge_values(old_values, new_values) do
+      old_values
+      |> load()
+      |> Kernel.++(new_values)
+      |> Enum.sort()
+      |> dump()
     end
 
     defp pipeline!(_conn, []) do

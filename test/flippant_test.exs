@@ -68,19 +68,40 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       assert Flippant.features("users") == []
     end
 
-    test "enable/3 adds a feature rule for a group" do
-      Flippant.enable("search", "staff", true)
-      Flippant.enable("search", "users", false)
-      Flippant.enable("delete", "staff")
+    describe "enable/3" do
+      test "it adds a feature rule for a group" do
+        Flippant.enable("search", "staff", [])
+        Flippant.enable("search", "users", [])
+        Flippant.enable("delete", "staff")
 
-      assert Flippant.features() == ["delete", "search"]
-      assert Flippant.features("staff") == ["delete", "search"]
-      assert Flippant.features("users") == ["search"]
+        assert Flippant.features() == ["delete", "search"]
+        assert Flippant.features("staff") == ["delete", "search"]
+        assert Flippant.features("users") == ["search"]
+      end
+
+      test "it merges additional values" do
+        Flippant.enable("search", "members", [1])
+        Flippant.enable("search", "members", [])
+        Flippant.enable("search", "members", [2, 3])
+
+        assert Flippant.breakdown == %{
+          "search" => %{"members" => [1, 2, 3]}
+        }
+      end
+
+      test "it ensures that values remain sorted" do
+        Flippant.enable("search", "members", [3, 1])
+        Flippant.enable("search", "members", [4, 2])
+
+        assert Flippant.breakdown == %{
+          "search" => %{"members" => [1, 2, 3, 4]}
+        }
+      end
     end
 
     test "disable/2 disables a feature for a group" do
-      Flippant.enable("search", "staff", true)
-      Flippant.enable("search", "users", false)
+      Flippant.enable("search", "staff", [])
+      Flippant.enable("search", "users", [])
 
       Flippant.disable("search", "users")
 
@@ -166,8 +187,8 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
         Flippant.enable("invite", "heinous", [5, 6])
 
         assert Flippant.breakdown() == %{
-          "search" => %{"awesome" => true, "heinous" => [1, 2]},
-          "delete" => %{"radical" => true},
+          "search" => %{"awesome" => [], "heinous" => [1, 2]},
+          "delete" => %{"radical" => []},
           "invite" => %{"heinous" => [5, 6]}
         }
       end
