@@ -4,7 +4,9 @@ elixir:
 otp_release:
   - 19.2
 sudo: false
+env:
+  - MIX_ENV=test
 script:
-  - mix test
+  - mix coveralls.travis
 services:
   - redis-server

@@ -10,6 +10,8 @@ defmodule Flippant.Mixfile do
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
 
+     test_coverage: [tool: ExCoveralls],
+
      description: description(),
      package: package(),
 
@@ -40,8 +42,10 @@ defmodule Flippant.Mixfile do
 
   defp deps do
     [{:redix, "~> 0.5", optional: true},
-     {:ex_doc, ">= 0.0.0", only: :docs},
-     {:inch_ex, ">= 0.0.0", only: :docs}]
+
+     {:ex_doc, ">= 0.0.0", only: :dev},
+     {:inch_ex, ">= 0.0.0", only: :dev},
+     {:excoveralls, "~> 0.6", only: [:dev, :test]}]
   end
 
   defp docs do
