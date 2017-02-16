@@ -1,6 +1,7 @@
 # Flippant
 
 [![Build Status](https://travis-ci.org/sorentwo/flippant.svg?branch=master)](https://travis-ci.org/sorentwo/flippant)
+[![Coverage Status](https://coveralls.io/repos/github/sorentwo/flippant/badge.svg?branch=master)](https://coveralls.io/github/sorentwo/flippant?branch=master)
 [![Hex version](https://img.shields.io/hexpm/v/flippant.svg "Hex version")](https://hex.pm/packages/flippant)
 [![Hex downloads](https://img.shields.io/hexpm/dt/flippant.svg "Hex downloads")](https://hex.pm/packages/flippant)
 [![Inline docs](https://inch-ci.org/github/sorentwo/flippant.svg)](https://inch-ci.org/github/sorentwo/flippant)
