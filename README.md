@@ -1,5 +1,10 @@
 # Flippant
 
+[![Build Status](https://travis-ci.org/sorentwo/flippant.svg?branch=master)](https://travis-ci.org/sorentwo/flippant)
+[![Hex version](https://img.shields.io/hexpm/v/flippant.svg "Hex version")](https://hex.pm/packages/flippant)
+[![Hex downloads](https://img.shields.io/hexpm/dt/flippant.svg "Hex downloads")](https://hex.pm/packages/flippant)
+[![Inline docs](https://inch-ci.org/github/sorentwo/flippant.svg)](https://inch-ci.org/github/sorentwo/flippant)
+
 Fast feature toggling for Elixir applications, backed by Redis.
 
 ## Installation

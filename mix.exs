@@ -13,13 +13,10 @@ defmodule Flippant.Mixfile do
      description: description(),
      package: package(),
 
-     deps: deps(),
-
      name: "Flippant",
-     source_url: "https://github.com/sorentwo/flippant",
-     docs: [source_ref: "v#{@version}",
-            extras: ["README.md"],
-            main: "Flippant"]]
+
+     deps: deps(),
+     docs: docs()]
   end
 
   def application do
@@ -43,6 +40,18 @@ defmodule Flippant.Mixfile do
 
   defp deps do
     [{:redix, "~> 0.5", optional: true},
-     {:ex_doc, ">= 0.0.0", only: :dev}]
+     {:ex_doc, ">= 0.0.0", only: :docs},
+     {:inch_ex, ">= 0.0.0", only: :docs}]
+  end
+
+  defp docs do
+    [main: "readme",
+     formatter_opts: [gfm: true],
+     source_ref: @version,
+     source_url: "https://github.com/sorentwo/flippant",
+     extras: [
+       "CHANGELOG.md",
+       "README.md"
+    ]]
   end
 end
