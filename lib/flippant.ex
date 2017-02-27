@@ -25,6 +25,7 @@ defmodule Flippant do
   defdelegate breakdown(), to: RuleRegistry
   defdelegate breakdown(actor), to: RuleRegistry
   defdelegate disable(feature, group), to: RuleRegistry
+  defdelegate disable(feature, group, values), to: RuleRegistry
   defdelegate enable(feature, group), to: RuleRegistry
   defdelegate enable(feature, group, values), to: RuleRegistry
   defdelegate enabled?(feature, actor), to: RuleRegistry

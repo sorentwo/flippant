@@ -93,21 +93,58 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
         Flippant.enable("search", "members", [3, 1])
         Flippant.enable("search", "members", [4, 2])
 
-        assert Flippant.breakdown == %{
+        assert Flippant.breakdown() == %{
           "search" => %{"members" => [1, 2, 3, 4]}
+        }
+      end
+
+      test "it operates atomically to avoid race conditions" do
+        tasks = for value <- 1..6 do
+          Task.async(fn -> Flippant.enable("search", "members", [value]) end)
+        end
+
+        Enum.each(tasks, &Task.await/1)
+
+        assert Flippant.breakdown() == %{
+          "search" => %{"members" => [1, 2, 3, 4, 5, 6]}
         }
       end
     end
 
-    test "disable/2 disables a feature for a group" do
-      Flippant.enable("search", "staff", [])
-      Flippant.enable("search", "users", [])
+    describe "disable/2" do
+      test "disables the feature for a group" do
+        Flippant.enable("search", "staff", [])
+        Flippant.enable("search", "users", [])
 
-      Flippant.disable("search", "users")
+        Flippant.disable("search", "users")
 
-      assert Flippant.features() == ["search"]
-      assert Flippant.features("staff") == ["search"]
-      assert Flippant.features("users") == []
+        assert Flippant.features() == ["search"]
+        assert Flippant.features("staff") == ["search"]
+        assert Flippant.features("users") == []
+      end
+
+      test "retains the group and removes values" do
+        Flippant.enable("search", "members", [1, 2])
+        Flippant.disable("search", "members", [2])
+
+        assert Flippant.breakdown() == %{
+          "search" => %{"members" => [1]}
+        }
+      end
+
+      test "operates atomically to avoid race conditions" do
+        Flippant.enable("search", "members", [1, 2, 3, 4, 5])
+
+        tasks = for value <- [1, 3, 5] do
+          Task.async(fn -> Flippant.disable("search", "members", [value]) end)
+        end
+
+        Enum.each(tasks, &Task.await/1)
+
+        assert Flippant.breakdown() == %{
+          "search" => %{"members" => [2, 4]}
+        }
+      end
     end
 
     test "enabled?/2 checks a feature for an actor" do

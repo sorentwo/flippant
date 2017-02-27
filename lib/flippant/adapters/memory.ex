@@ -42,10 +42,17 @@ defmodule Flippant.Adapter.Memory do
 
     {:noreply, table}
   end
-
-  def handle_cast({:remove, feature, group}, table) do
+  def handle_cast({:remove, feature, group, []}, table) do
     case :ets.lookup(table, feature) do
       [{_, rules}] -> :ets.insert(table, {feature, without_group(rules, group)})
+                 _ -> true
+    end
+
+    {:noreply, table}
+  end
+  def handle_cast({:remove, feature, group, values}, table) do
+    case :ets.lookup(table, feature) do
+      [{_, rules}] -> :ets.insert(table, {feature, diff_rules({group, values}, rules)})
                  _ -> true
     end
 
@@ -98,13 +105,21 @@ defmodule Flippant.Adapter.Memory do
     Enum.any?(rules, &(elem(&1, 0) == group))
   end
 
-  defp merge_rules({group, values}, rules) do
+  def change_values({group, values}, rules, fun) do
     mvalues = case Enum.find(rules, &(elem(&1, 0) == group)) do
-      {_, rvalues} -> values ++ rvalues
+      {_, rvalues} -> fun.(rvalues, values)
                  _ -> values
     end
 
     List.keystore(rules, group, 0, {group, Enum.sort(mvalues)})
+  end
+
+  defp diff_rules(rule, rules) do
+    change_values(rule, rules, fn (old, new) -> old -- new end)
+  end
+
+  defp merge_rules(rule, rules) do
+    change_values(rule, rules, fn (old, new) -> new ++ old end)
   end
 
   defp get_features(table, :all) do

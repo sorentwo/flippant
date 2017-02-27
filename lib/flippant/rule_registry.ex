@@ -104,13 +104,25 @@ defmodule Flippant.RuleRegistry do
 
       iex> Flippant.RuleRegistry.disable("search", "adopters")
       :ok
+
+  Alternatively, individual values may be disabled for a group. This is useful
+  when a group should stay enabled and only a single value (i.e. user id) needs
+  to be removed.
+
+  ## Example
+
+  Disable `search` feature for a user in the `adopters` group:
+
+      iex> Flippant.RuleRegistry.disable("search", "adopters", [123])
+      :ok
   """
   @spec disable(binary, binary) :: :ok
-  def disable(feature, group)
+  def disable(feature, group, values \\ [])
       when is_binary(feature)
-      when is_binary(group) do
+      when is_binary(group)
+      when is_list(values) do
 
-    GenServer.cast(adapter(), {:remove, feature, group})
+    GenServer.cast(adapter(), {:remove, feature, group, values})
   end
 
   @doc """
