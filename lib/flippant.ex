@@ -33,6 +33,7 @@ defmodule Flippant do
   defdelegate exists?(feature, group), to: RuleRegistry
   defdelegate features(), to: RuleRegistry
   defdelegate features(group), to: RuleRegistry
+  defdelegate rename(old_name, new_name), to: RuleRegistry
   defdelegate register(group, fun), to: GroupRegistry
   defdelegate registered(), to: GroupRegistry
   defdelegate remove(feature), to: RuleRegistry

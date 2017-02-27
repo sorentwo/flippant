@@ -147,6 +147,35 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       end
     end
 
+    describe "rename/2" do
+      test "rename an existing feature" do
+        Flippant.enable("search", "members", [1])
+
+        Flippant.rename("search", "super-search")
+
+        assert Flippant.features() == ["super-search"]
+      end
+
+      test "normalize values while renaming" do
+        Flippant.enable("search", "members")
+
+        Flippant.rename(" SEARCH ", " SUPER-SEARCH ")
+
+        assert Flippant.features() == ["super-search"]
+      end
+
+      test "clobber an existing feature with the same name" do
+        Flippant.enable("search", "members", [1])
+        Flippant.enable("super-search", "members", [2])
+
+        Flippant.rename("search", "super-search")
+
+        assert Flippant.breakdown() == %{
+          "super-search" => %{"members" => [1]}
+        }
+      end
+    end
+
     test "enabled?/2 checks a feature for an actor" do
       Flippant.register("staff", fn(actor, _values) -> actor.staff? end)
 

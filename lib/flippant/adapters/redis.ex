@@ -64,6 +64,15 @@ if Code.ensure_loaded?(Redix) do
       {:noreply, conn}
     end
 
+    def handle_cast({:rename, old_name, new_name}, conn) do
+      pipeline!(conn, [["WATCH", old_name, new_name],
+                       ["SREM", @feature_key, old_name],
+                       ["SADD", @feature_key, new_name],
+                       ["RENAME", old_name, new_name]])
+
+      {:noreply, conn}
+    end
+
     def handle_call({:breakdown, actor}, _from, conn) do
       features = fetch_features(conn)
       requests = Enum.map(features, &(["HGETALL", &1]))

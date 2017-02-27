@@ -47,7 +47,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec add(binary) :: :ok
   def add(feature) when is_binary(feature) do
-    GenServer.cast(adapter(), {:add, feature})
+    GenServer.cast(adapter(), {:add, normalize(feature)})
   end
 
   @doc """
@@ -122,7 +122,26 @@ defmodule Flippant.RuleRegistry do
       when is_binary(group)
       when is_list(values) do
 
-    GenServer.cast(adapter(), {:remove, feature, group, values})
+    GenServer.cast(adapter(), {:remove, normalize(feature), group, values})
+  end
+
+  @doc """
+  Rename an existing feature.
+
+  If the new feature name already exists it will overwritten and all of the
+  rules will be replaced.
+
+  ## Example
+
+      iex> Flippant.RuleRegistry.rename("search", "super-search")
+      :ok
+  """
+  @spec rename(binary, binary) :: :ok
+  def rename(old_name, new_name)
+      when is_binary(old_name)
+      when is_binary(new_name) do
+
+    GenServer.cast(adapter(), {:rename, normalize(old_name), normalize(new_name)})
   end
 
   @doc """
@@ -135,7 +154,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec remove(binary) :: :ok
   def remove(feature) when is_binary(feature) do
-    GenServer.cast(adapter(), {:remove, feature})
+    GenServer.cast(adapter(), {:remove, normalize(feature)})
   end
 
   @doc """
@@ -169,7 +188,7 @@ defmodule Flippant.RuleRegistry do
       when is_binary(feature)
       when is_binary(group) do
 
-    GenServer.cast(adapter(), {:add, feature, {group, values}})
+    GenServer.cast(adapter(), {:add, normalize(feature), {group, values}})
   end
 
   @doc """
@@ -183,7 +202,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec enabled?(binary, map | struct) :: boolean
   def enabled?(feature, actor) when is_binary(feature) do
-    GenServer.call(adapter(), {:enabled?, feature, actor})
+    GenServer.call(adapter(), {:enabled?, normalize(feature), actor})
   end
 
   @doc """
@@ -201,7 +220,7 @@ defmodule Flippant.RuleRegistry do
   """
   @spec exists?(binary, binary | :any) :: boolean
   def exists?(feature, group \\ :any) do
-    GenServer.call(adapter(), {:exists?, feature, group})
+    GenServer.call(adapter(), {:exists?, normalize(feature), group})
   end
 
   @doc """
@@ -229,4 +248,10 @@ defmodule Flippant.RuleRegistry do
 
   @spec adapter() :: pid
   defp adapter(), do: Flippant.Adapter.adapter()
+
+  defp normalize(value) when is_binary(value) do
+    value
+    |> String.downcase()
+    |> String.trim()
+  end
 end

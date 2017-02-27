@@ -59,6 +59,15 @@ defmodule Flippant.Adapter.Memory do
     {:noreply, table}
   end
 
+  def handle_cast({:rename, old_name, new_name}, table) do
+    with [{_, rules}] <- :ets.lookup(table, old_name),
+         true <- :ets.insert(table, {new_name, rules}),
+         true <- :ets.delete(table, old_name),
+     do: true
+
+    {:noreply, table}
+  end
+
   def handle_call({:breakdown, actor}, _from, table) do
     fun = fn({feature, rules}), acc ->
       Map.put(acc, feature, breakdown_value(rules, actor))
