@@ -21,12 +21,22 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       :ok
     end
 
-    test "add/1 adds to the list of known features" do
-      :ok = Flippant.add("search")
-      :ok = Flippant.add("search")
-      :ok = Flippant.add("delete")
+    describe "add/1" do
+      test "adds to the list of known features" do
+        :ok = Flippant.add("search")
+        :ok = Flippant.add("search")
+        :ok = Flippant.add("delete")
 
-      assert Flippant.features() == ["delete", "search"]
+        assert Flippant.features() == ["delete", "search"]
+      end
+
+      test "normalizes feature names" do
+        Flippant.add("Search")
+        Flippant.add(" search ")
+        Flippant.add("\nSEARCH\t")
+
+        assert Flippant.features() == ["search"]
+      end
     end
 
     test "clear/0 removes all known groups and features" do
