@@ -10,22 +10,17 @@ defmodule Flippant.SerializerTest do
     end
 
     test "uses the configured serializer" do
-      defmodule Custom do
-      end
+      on_exit fn -> Application.delete_env(:flippant, :serializer) end
 
-      try do
-        Application.put_env(:flippant, :serializer, Custom)
+      Application.put_env(:flippant, :serializer, :custom)
 
-        assert Serializer.serializer == Custom
-      after
-        Application.delete_env(:flippant, :serializer)
-      end
+      assert Serializer.serializer == :custom
     end
   end
 
   describe "dumping and loading" do
     test "values are serialized and deserialized using the serializer" do
-      value = %{a: 1}
+      value = %{a: 1, b: 2}
       dumped = Serializer.dump(value)
       loaded = Serializer.load(dumped)
 
