@@ -119,8 +119,8 @@ defmodule Flippant.RuleRegistry do
   @spec disable(binary, binary) :: :ok
   def disable(feature, group, values \\ [])
       when is_binary(feature)
-      when is_binary(group)
-      when is_list(values) do
+      and is_binary(group)
+      and is_list(values) do
 
     GenServer.cast(adapter(), {:remove, normalize(feature), group, values})
   end
@@ -139,7 +139,7 @@ defmodule Flippant.RuleRegistry do
   @spec rename(binary, binary) :: :ok
   def rename(old_name, new_name)
       when is_binary(old_name)
-      when is_binary(new_name) do
+      and is_binary(new_name) do
 
     GenServer.cast(adapter(), {:rename, normalize(old_name), normalize(new_name)})
   end
@@ -186,7 +186,7 @@ defmodule Flippant.RuleRegistry do
   @spec enable(binary, binary, [any]) :: :ok
   def enable(feature, group, values \\ [])
       when is_binary(feature)
-      when is_binary(group) do
+      and is_binary(group) do
 
     GenServer.cast(adapter(), {:add, normalize(feature), {group, values}})
   end

@@ -10,7 +10,7 @@ Fast feature toggling for Elixir applications, backed by Redis.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+Flippant can be installed as:
 
   1. Add flippant and redix to your list of dependencies in `mix.exs`:
 
