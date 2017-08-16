@@ -1,6 +1,6 @@
-defmodule Flippant.GroupRegistry do
+defmodule Flippant.Registry do
   @moduledoc """
-  Named groups are stored within a GroupRegistry process. Groups are used to
+  Named groups are stored within a Registry process. Groups are used to
   identify and qualify actors within a system. Typically an actor is a "user",
   but it could be a company, a device, or any other entity that needs to be
   classified.
@@ -45,7 +45,7 @@ defmodule Flippant.GroupRegistry do
 
   ## Example
 
-      iex> Flippant.GroupRegistry.clear()
+      iex> Flippant.Registry.clear()
       :ok
   """
   @spec clear() :: :ok
@@ -61,14 +61,14 @@ defmodule Flippant.GroupRegistry do
 
   ## Example
 
-      iex> Flippant.GroupRegistry.register("evens",
+      iex> Flippant.Registry.register("evens",
              fn(actor, _) -> rem(actor.id, 2) == 0 end)
       :ok
   """
   @spec register(binary, fun) :: :ok
   def register(group, fun)
       when is_binary(group)
-      when is_function(fun, 2) do
+      and is_function(fun, 2) do
     Agent.update(__MODULE__, &MapSet.put(&1, {group, fun}))
   end
 
@@ -78,7 +78,7 @@ defmodule Flippant.GroupRegistry do
 
   ## Example
 
-      iex> Flippant.GroupRegistry.registered()
+      iex> Flippant.Registry.registered()
       %{"staff" => #Function<20.50752066/0}
   """
   @spec registered() :: map

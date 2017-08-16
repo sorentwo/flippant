@@ -3,7 +3,7 @@ defmodule Flippant.Rules do
   The Rules module glues rules, actors, and groups are together.
   """
 
-  alias Flippant.GroupRegistry
+  alias Flippant.Registry
 
   @doc """
   Check whether any rules are enabled for a particular actor. The function
@@ -24,7 +24,7 @@ defmodule Flippant.Rules do
   """
   @spec enabled_for_actor?(list, any, Map.t) :: boolean
   def enabled_for_actor?(rules, actor, groups \\ nil) do
-    groups = groups || GroupRegistry.registered()
+    groups = groups || Registry.registered()
 
     Enum.any?(rules, fn {name, values} ->
       if fun = Map.get(groups, name) do

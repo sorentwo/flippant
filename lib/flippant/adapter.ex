@@ -1,20 +1,29 @@
 defmodule Flippant.Adapter do
   @moduledoc """
-  An adapter is a module that stores rules. Adapters should be stateful and run
-  in their own process. The built in adapters are all GenServers, and therefor
-  implement the GenServer behaviour.
+  An adapter implemtnation stores the rules that govern features.
 
-  For a breakdown of the expected calls and casts see `Flippant.RuleRegistry`
+  Rules represent individual features along with the group(s) the feature is
+  enabled for. For example, "search", "analytics", "super-secret-feature" could
+  all be rule names, and they could each be enabled for one or more groups.
   """
 
-  @doc """
-  Retrieve the `pid` of the configured adapter process. It is expected that the
-  adapter has been started.
-  """
-  @spec adapter() :: pid
-  def adapter do
-    :flippant
-    |> Application.get_env(:adapter)
-    |> Process.whereis()
-  end
+  @callback add(binary) :: :ok
+
+  @callback breakdown(map | struct | :all) :: map
+
+  @callback clear() :: :ok
+
+  @callback disable(binary, binary, list(any)) :: :ok
+
+  @callback enable(binary, binary, list(any)) :: :ok
+
+  @callback enabled?(binary, map | struct) :: boolean
+
+  @callback exists?(binary, binary | :any) :: boolean
+
+  @callback features(:all | binary) :: list(binary)
+
+  @callback rename(binary, binary) :: :ok
+
+  @callback remove(binary) :: :ok
 end
