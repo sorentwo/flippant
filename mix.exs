@@ -22,7 +22,7 @@ defmodule Flippant.Mixfile do
   end
 
   def application do
-    [applications: [:logger],
+    [extra_applications: [:logger],
      env: [adapter: Flippant.Adapter.Memory],
      mod: {Flippant, []}]
   end

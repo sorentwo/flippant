@@ -1,80 +1,99 @@
 if Code.ensure_loaded?(Redix) do
   defmodule Flippant.Adapter.Redis do
+    @moduledoc """
+    This module provides Redis backed rule storage.
+    """
+
     use GenServer
 
     import Flippant.Rules, only: [enabled_for_actor?: 2]
     import Flippant.Serializer, only: [dump: 1, load: 1]
     import Redix, only: [command!: 2]
 
-    @feature_key "flippant-features"
+    @default_set_key "flippant-features"
 
-    def start_link(options) do
-      GenServer.start_link(__MODULE__, options, [name: __MODULE__])
+    @doc """
+    Starts the Redis adapter.
+
+    # Options
+
+      * `:redis_opts` - Options that can be passed to Redix, the underlying
+        library used to connect to Redis.
+      * `:set_key` - The Redis key where rules will be stored. Defaults to
+        `"flippant-features"`.
+    """
+    def start_link(opts \\ []) do
+      GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
     end
 
     # Callbacks
 
     def init(opts) do
-      redis_opts = Keyword.get(opts, :redis_opts, [])
+      {:ok, conn} =
+        opts
+        |> Keyword.get(:redis_opts, [])
+        |> parse_opts_and_connect()
 
-      parse_opts_and_connect(redis_opts)
+      set_key = Keyword.get(opts, :set_key, @default_set_key)
+
+      {:ok, %{conn: conn, set_key: set_key}}
     end
 
-    def handle_cast({:add, feature}, conn) do
-      command!(conn, ["SADD", @feature_key, feature])
+    def handle_cast({:add, feature}, %{conn: conn, set_key: set_key} = state) do
+      command!(conn, ["SADD", set_key, feature])
 
-      {:noreply, conn}
+      {:noreply, state}
     end
-    def handle_cast({:add, feature, {group, values}}, conn) do
+    def handle_cast({:add, feature, {group, values}}, %{conn: conn, set_key: set_key} = state) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = merge_values(old_values, values)
 
-      pipeline!(conn, [["SADD", @feature_key, feature],
+      pipeline!(conn, [["SADD", set_key, feature],
                       ["HSET", feature, group, new_values]])
 
-      {:noreply, conn}
+      {:noreply, state}
     end
 
-    def handle_cast(:clear, conn) do
-      command!(conn, ["DEL", @feature_key] ++ fetch_features(conn))
+    def handle_cast(:clear, %{conn: conn, set_key: set_key} = state) do
+      command!(conn, ["DEL", set_key] ++ fetch_features(state))
 
-      {:noreply, conn}
+      {:noreply, state}
     end
 
-    def handle_cast({:remove, feature}, conn) do
-      pipeline!(conn, [["SREM", @feature_key, feature],
+    def handle_cast({:remove, feature}, %{conn: conn, set_key: set_key} = state) do
+      pipeline!(conn, [["SREM", set_key, feature],
                       ["DEL", feature]])
 
-      {:noreply, conn}
+      {:noreply, state}
     end
-    def handle_cast({:remove, feature, group, []}, conn) do
+    def handle_cast({:remove, feature, group, []}, %{conn: conn, set_key: set_key} = state) do
       with _count <- command!(conn, ["HDEL", feature, group]),
                [] <- command!(conn, ["HGETALL", feature]),
-           _count <- command!(conn, ["SREM", @feature_key, feature]),
+           _count <- command!(conn, ["SREM", set_key, feature]),
        do: :ok
 
-      {:noreply, conn}
+      {:noreply, state}
     end
-    def handle_cast({:remove, feature, group, values}, conn) do
+    def handle_cast({:remove, feature, group, values}, %{conn: conn} = state) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = diff_values(old_values, values)
 
       command!(conn, ["HSET", feature, group, new_values])
 
-      {:noreply, conn}
+      {:noreply, state}
     end
 
-    def handle_cast({:rename, old_name, new_name}, conn) do
+    def handle_cast({:rename, old_name, new_name}, %{conn: conn, set_key: set_key} = state) do
       pipeline!(conn, [["WATCH", old_name, new_name],
-                       ["SREM", @feature_key, old_name],
-                       ["SADD", @feature_key, new_name],
+                       ["SREM", set_key, old_name],
+                       ["SADD", set_key, new_name],
                        ["RENAME", old_name, new_name]])
 
-      {:noreply, conn}
+      {:noreply, state}
     end
 
-    def handle_call({:breakdown, actor}, _from, conn) do
-      features = fetch_features(conn)
+    def handle_call({:breakdown, actor}, _from, %{conn: conn} = state) do
+      features = fetch_features(state)
       requests = Enum.map(features, &(["HGETALL", &1]))
       results  = pipeline!(conn, requests)
 
@@ -85,35 +104,35 @@ if Code.ensure_loaded?(Redix) do
              Map.put(acc, feature, breakdown_value(decode_rules(rules), actor))
            end)
 
-      {:reply, breakdown, conn}
+      {:reply, breakdown, state}
     end
 
-    def handle_call({:enabled?, feature, actor}, _from, conn) do
+    def handle_call({:enabled?, feature, actor}, _from, %{conn: conn} = state) do
       enabled =
         conn
         |> command!(["HGETALL", feature])
         |> decode_rules()
         |> enabled_for_actor?(actor)
 
-      {:reply, enabled, conn}
+      {:reply, enabled, state}
     end
 
-    def handle_call({:exists?, feature, :any}, _from, conn) do
-      enabled = command!(conn, ["SISMEMBER", @feature_key, feature]) == 1
+    def handle_call({:exists?, feature, :any}, _from, %{conn: conn, set_key: set_key} = state) do
+      enabled = command!(conn, ["SISMEMBER", set_key, feature]) == 1
 
-      {:reply, enabled, conn}
+      {:reply, enabled, state}
     end
-    def handle_call({:exists?, feature, group}, _from, conn) do
+    def handle_call({:exists?, feature, group}, _from, %{conn: conn} = state) do
       enabled = command!(conn, ["HEXISTS", feature, group]) == 1
 
-      {:reply, enabled, conn}
+      {:reply, enabled, state}
     end
 
-    def handle_call({:features, :all}, _from, conn) do
-      {:reply, fetch_features(conn), conn}
+    def handle_call({:features, :all}, _from, state) do
+      {:reply, fetch_features(state), state}
     end
-    def handle_call({:features, group}, _from, conn) do
-      features = fetch_features(conn)
+    def handle_call({:features, group}, _from, %{conn: conn} = state) do
+      features = fetch_features(state)
       requests = Enum.map(features, &(["HEXISTS", &1, group]))
       results  = pipeline!(conn, requests)
 
@@ -123,7 +142,7 @@ if Code.ensure_loaded?(Redix) do
         |> Enum.filter(& elem(&1, 1) == 1)
         |> Enum.map(& elem(&1, 0))
 
-      {:reply, features, conn}
+      {:reply, features, state}
     end
 
     # Helpers
@@ -142,9 +161,9 @@ if Code.ensure_loaded?(Redix) do
       |> Enum.into(%{})
     end
 
-    defp fetch_features(conn) do
+    defp fetch_features(%{conn: conn, set_key: set_key}) do
       conn
-      |> command!(["SMEMBERS", @feature_key])
+      |> command!(["SMEMBERS", set_key])
       |> Enum.sort
     end
 

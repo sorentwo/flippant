@@ -3,13 +3,13 @@ defmodule Flippant.Adapter.Memory do
 
   import Flippant.Rules, only: [enabled_for_actor?: 2]
 
-  def start_link(options) do
-    GenServer.start_link(__MODULE__, options, [name: __MODULE__])
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
   end
 
   # Callbacks
 
-  def init(_options) do
+  def init(_opts) do
     {:ok, :ets.new(:features, [read_concurrency: true])}
   end
 
