@@ -1,9 +1,20 @@
 defmodule Flippant.Adapter.Memory do
+  @moduledoc """
+  This module provides ETS backed rule storage.
+
+  The Memory adapter is not persisted between application restarts, and
+  therefore is intended for testing.
+  """
+
   use GenServer
 
   import Flippant.Rules, only: [enabled_for_actor?: 2]
 
-  def start_link(opts) do
+  @doc """
+  Starts the Memory adapter.
+  """
+  @spec start_link(Keyword.t) :: GenServer.on_start
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
   end
 
