@@ -41,11 +41,11 @@ defmodule Flippant.Mixfile do
   end
 
   defp deps do
-    [{:redix, "~> 0.5", optional: true},
+    [{:redix, "~> 0.6", optional: true},
 
      {:ex_doc, ">= 0.0.0", only: :dev},
      {:inch_ex, ">= 0.0.0", only: :dev},
-     {:excoveralls, "~> 0.6", only: [:dev, :test]}]
+     {:excoveralls, "~> 0.7", only: [:dev, :test]}]
   end
 
   defp docs do
