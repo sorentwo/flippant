@@ -1,26 +1,5 @@
 defmodule Flippant do
-  use Application
-
   alias Flippant.Registry
-
-  @doc """
-  Starts the Flippant application and supervision tree.
-  """
-  def start(_, _) do
-    import Supervisor.Spec
-
-    flippant_opts = Application.get_all_env(:flippant)
-    adapter = Application.get_env(:flippant, :adapter)
-
-    children = [
-      worker(Registry, []),
-      worker(adapter, [flippant_opts])
-    ]
-
-    opts = [strategy: :one_for_one, name: Flippant.Supervisor]
-
-    Supervisor.start_link(children, opts)
-  end
 
   @doc """
   Add a new feature to the registry of known features. Note that adding a
