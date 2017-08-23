@@ -9,18 +9,12 @@ defmodule Flippant.Rules do
   Check whether any rules are enabled for a particular actor. The function
   accepts a list of names/value pairs and an actor.
 
-  ## Example
+  # Example
 
-      rules = [%{"staff", [1, 2]}, %{"people", []}]
-      actor = %User{id: 1, name: "Parker"}
-      group = %{"staff" => fn(_, _) -> true end}
-
-      Flippant.Rules.enabled_for_actor?(rules, actor) #=> false
+      Flippant.Rules.enabled_for_actor?(rules, actor, groups)
 
   Without a third argument of the groups to be checked it falls back to
   collecting the globally registered groups.
-
-      Flippant.Rules.enabled_for_actor?(rules, actor, group) #=> true
   """
   @spec enabled_for_actor?(list, any, Map.t) :: boolean
   def enabled_for_actor?(rules, actor, groups \\ nil) do
