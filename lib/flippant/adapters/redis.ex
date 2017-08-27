@@ -29,6 +29,8 @@ if Code.ensure_loaded?(Redix) do
     # Callbacks
 
     def init(opts) do
+      {:ok, _} = Application.ensure_all_started(:redix)
+
       {:ok, conn} =
         opts
         |> Keyword.get(:redis_opts, [])
@@ -49,7 +51,7 @@ if Code.ensure_loaded?(Redix) do
       new_values = merge_values(old_values, values)
 
       pipeline!(conn, [["SADD", set_key, feature],
-                      ["HSET", feature, group, new_values]])
+                       ["HSET", feature, group, new_values]])
 
       {:noreply, state}
     end
@@ -62,7 +64,7 @@ if Code.ensure_loaded?(Redix) do
 
     def handle_cast({:remove, feature}, %{conn: conn, set_key: set_key} = state) do
       pipeline!(conn, [["SREM", set_key, feature],
-                      ["DEL", feature]])
+                       ["DEL", feature]])
 
       {:noreply, state}
     end
@@ -95,7 +97,7 @@ if Code.ensure_loaded?(Redix) do
     def handle_call({:breakdown, actor}, _from, %{conn: conn} = state) do
       features = fetch_features(state)
       requests = Enum.map(features, &(["HGETALL", &1]))
-      results  = pipeline!(conn, requests)
+      results = pipeline!(conn, requests)
 
       breakdown =
         features
@@ -134,7 +136,7 @@ if Code.ensure_loaded?(Redix) do
     def handle_call({:features, group}, _from, %{conn: conn} = state) do
       features = fetch_features(state)
       requests = Enum.map(features, &(["HEXISTS", &1, group]))
-      results  = pipeline!(conn, requests)
+      results = pipeline!(conn, requests)
 
       features =
         features
@@ -164,7 +166,7 @@ if Code.ensure_loaded?(Redix) do
     defp fetch_features(%{conn: conn, set_key: set_key}) do
       conn
       |> command!(["SMEMBERS", set_key])
-      |> Enum.sort
+      |> Enum.sort()
     end
 
     defp diff_values(nil, new_values) do
