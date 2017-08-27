@@ -1,14 +1,30 @@
 defmodule Flippant do
   alias Flippant.Registry
 
+  # Adapter
+
   @doc """
-  Add a new feature to the registry of known features. Note that adding a
-  feature does not enable it for any groups, that can be done using `enable/2`
-  or `enable/3`.
+  Retrieve the `pid` of the configured adapter process.
 
-  # Example
+  This will return `nil` if the adapter hasn't been started.
+  """
+  @spec adapter() :: pid | nil
+  def adapter do
+    :flippant
+    |> Application.get_env(:adapter)
+    |> Process.whereis()
+  end
 
-      iex> Flippant.add("search")
+  @doc """
+  Add a new feature without any rules.
+
+  Adding a feature does not enable it for any groups, that can be done using
+  `enable/2` or `enable/3`.
+
+  ## Examples
+
+      Flippant.add("search")
+      #=> :ok
   """
   @spec add(binary) :: :ok
   def add(feature) when is_binary(feature) do
@@ -16,6 +32,8 @@ defmodule Flippant do
   end
 
   @doc """
+  Generate a mapping of all features and associated rules.
+
   Breakdown without any arguments defaults to `:all`, and will list all
   registered features along with their group and value metadata. It is the only
   way to retrieve a snapshot of all the features in the system. The operation
@@ -25,21 +43,21 @@ defmodule Flippant do
   `%User{}` struct or some other entity. It generates a map outlining which
   features are enabled for the actor.
 
-  # Example
+  ## Examples
 
   Assuming the groups `awesome`, `heinous`, and `radical`, and the features
   `search`, `delete` and `invite` are enabled, the breakdown would look like:
 
-      iex> Flippant.breakdown()
-      %{"search" => %{"awesome" => [], "heinous" => []},
-        "delete" => %{"radical" => []},
-        "invite" => %{"heinous" => []}}
+      Flippant.breakdown()
+      #=> %{"search" => %{"awesome" => [], "heinous" => []},
+            "delete" => %{"radical" => []},
+            "invite" => %{"heinous" => []}}
 
   Getting the breakdown for a particular actor:
 
-      iex> actor = %User{ id: 1, awesome?: true, radical?: false}
-      ...> Flippant.breakdown(actor)
-      %{"delete" => true, "search" => false}
+      actor = %User{ id: 1, awesome?: true, radical?: false}
+      Flippant.breakdown(actor)
+      #=> %{"delete" => true, "search" => false}
   """
   @spec breakdown(map | struct | :all) :: map
   def breakdown(actor \\ :all) do
@@ -47,55 +65,64 @@ defmodule Flippant do
   end
 
   @doc """
-  Purge all of the registered groups and features. This is particularly useful
-  in testing when you want to reset to a clean slate after a test.
+  Purge registered groups, features, or both.
 
-  # Example
+  This is particularly useful in testing when you want to reset to a clean
+  slate after a test.
+
+  ## Examples
+
+  Clear everything:
+
+      Flippant.clear()
+      #=> :ok
 
   Clear only features:
 
-      iex> Flippant.clear(:features)
-      :ok
+      Flippant.clear(:features)
+      #=> :ok
 
   Clear only groups:
 
-      iex> Flippant.clear(:groups)
-      :ok
+      Flippant.clear(:groups)
+      #=> :ok
   """
   @spec clear(:features | :groups) :: :ok
-  def clear do
-    :ok = clear(:groups)
-    :ok = clear(:features)
-
-    :ok
-  end
+  def clear(selection \\ nil)
   def clear(:features) do
     GenServer.cast(adapter(), :clear)
   end
   def clear(:groups) do
     Registry.clear()
   end
+  def clear(_) do
+    :ok = clear(:groups)
+    :ok = clear(:features)
+
+    :ok
+  end
 
   @doc """
-  Disable a feature for a particular group. The feature is kept in the
-  registry, but any rules for that group are removed.
+  Disable a feature for a particular group.
 
-  # Example
+  The feature is kept in the registry, but any rules for that group are
+  removed.
+
+  ## Examples
 
   Disable the `search` feature for the `adopters` group:
 
-      iex> Flippant.disable("search", "adopters")
+      Flippant.disable("search", "adopters")
+      #=> :ok
 
   Alternatively, individual values may be disabled for a group. This is useful
   when a group should stay enabled and only a single value (i.e. user id) needs
   to be removed.
 
-  # Example
-
   Disable `search` feature for a user in the `adopters` group:
 
-      iex> Flippant.disable("search", "adopters", [123])
-      :ok
+      Flippant.disable("search", "adopters", [123])
+      #=> :ok
   """
   @spec disable(binary, binary) :: :ok
   def disable(feature, group, values \\ [])
@@ -107,30 +134,30 @@ defmodule Flippant do
   end
 
   @doc """
+  Enable a feature for a particular group.
+
   Features can be enabled for a group along with a set of values. The values
   will be passed along to the group's registered function when determining
   whether a feature is enabled for a particular actor.
 
   Values are useful when limiting a feature to a subset of actors by `id` or
-  some other distinguishing factor.
+  some other distinguishing factor. Value serialization can be customized by
+  using an alternate module implementing the `Flippant.Serializer` behaviour.
 
-  Value serialization can be customized by using an alternate module
-  implementing the `Flippant.Serializer` behaviour.
-
-  # Example
+  ## Examples
 
   Enable the `search` feature for the `radical` group, without any specific
   values:
 
-      iex> Flippant.enable("search", "radical")
-      :ok
+      Flippant.enable("search", "radical")
+      #=> :ok
 
   Assuming the group `awesome` checks whether an actor's id is in the list of
   values, you would enable the `search` feature for actors 1, 2 and 3 like
   this:
 
-      iex> Flippant.enable("search", "awesome", [1, 2, 3])
-      :ok
+      Flippant.enable("search", "awesome", [1, 2, 3])
+      #=> :ok
   """
   @spec enable(binary, binary, list(any)) :: :ok
   def enable(feature, group, values \\ [])
@@ -141,13 +168,15 @@ defmodule Flippant do
   end
 
   @doc """
-  Check if a particular feature is enabled for an actor. If the actor belongs
-  to any groups that have access to the feature then it will be enabled.
+  Check if a particular feature is enabled for an actor.
 
-  # Example
+  If the actor belongs to any groups that have access to the feature then it
+  will be enabled.
 
-      iex> Flippant.enabled?("search", actor)
-      false
+  ## Examples
+
+      Flippant.enabled?("search", actor)
+      #=> false
   """
   @spec enabled?(binary, map | struct) :: boolean
   def enabled?(feature, actor) when is_binary(feature) do
@@ -155,17 +184,19 @@ defmodule Flippant do
   end
 
   @doc """
-  Check whether a given feature has been registered in the system. If a `group`
-  is also sent it will check whether the feature has any rules for that group.
+  Check whether a given feature has been registered.
 
-  # Example
+  If a `group` is provided it will check whether the feature has any rules for
+  that group.
 
-      iex> Flippant.exists?("search")
-      false
+  ## Examples
 
-      iex> Flippant.add("search")
-      ...> Flippant.exists?("search")
-      true
+      Flippant.exists?("search")
+      #=> false
+
+      Flippant.add("search")
+      Flippant.exists?("search")
+      #=> true
   """
   @spec exists?(binary, binary | :any) :: boolean
   def exists?(feature, group \\ :any) do
@@ -175,20 +206,20 @@ defmodule Flippant do
   @doc """
   List all known features or only features enabled for a particular group.
 
-  # Example
+  ## Examples
 
   Given the features `search` and `delete`:
 
-      iex> Flippant.features()
-      ["search", "delete"]
+      Flippant.features()
+      #=> ["search", "delete"]
 
-      iex> Flippant.features(:all)
-      ["search", "delete"]
+      Flippant.features(:all)
+      #=> ["search", "delete"]
 
   If the `search` feature were only enabled for the `awesome` group:
 
-      iex> Flippant.features("awesome")
-      ["search"]
+      Flippant.features("awesome")
+      #=> ["search"]
   """
   @spec features(:all | binary) :: list(binary)
   def features(group \\ :all) do
@@ -201,9 +232,9 @@ defmodule Flippant do
   If the new feature name already exists it will overwritten and all of the
   rules will be replaced.
 
-  # Example
+  ## Examples
 
-      iex> Flippant.rename("search", "super-search")
+      Flippant.rename("search", "super-search")
       :ok
   """
   @spec rename(binary, binary) :: :ok
@@ -217,9 +248,9 @@ defmodule Flippant do
   @doc """
   Fully remove a feature for all groups.
 
-  # Example
+  ## Examples
 
-      iex> Flippant.remove("search")
+      Flippant.remove("search")
       :ok
   """
   @spec remove(binary) :: :ok
@@ -234,32 +265,51 @@ defmodule Flippant do
   such as Postgres, which require a schema/table to operate this will create the
   necessary table.
 
-  # Example
+  ## Examples
 
-      iex> Flippant.setup()
+      Flippant.setup()
       :ok
   """
+  @spec setup() :: :ok
   def setup do
     GenServer.cast(adapter(), :setup)
-  end
-
-  defdelegate register(group, fun), to: Registry
-  defdelegate registered(), to: Registry
-
-  @doc """
-  Retrieve the `pid` of the configured adapter process. It is expected that the
-  adapter has been started.
-  """
-  @spec adapter() :: pid
-  def adapter do
-    :flippant
-    |> Application.get_env(:adapter)
-    |> Process.whereis()
   end
 
   defp normalize(value) when is_binary(value) do
     value
     |> String.downcase()
     |> String.trim()
+  end
+
+  # Registry
+
+  @doc """
+  Register a new group name and function.
+
+  The function *must* have an arity of 2 or it won't be accepted. Registering
+  a group with the same name will overwrite the previous group.
+
+  ## Examples
+
+      Flippant.register("evens", & rem(&1.id, 2) == 0)
+      #=> :ok
+  """
+  @spec register(binary, (any, list -> boolean)) :: :ok
+  def register(group, fun) when is_binary(group) and is_function(fun, 2) do
+    Registry.register(group, fun)
+  end
+
+  @doc """
+  List all of the registered groups as a map where the keys are the names and
+  values are the functions.
+
+  ## Examples
+
+      Flippant.registered()
+      #=> %{"staff" => #Function<20.50752066/0}
+  """
+  @spec registered() :: map
+  def registered do
+    Registry.registered()
   end
 end
