@@ -1,4 +1,6 @@
-for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
+for adapter <- [Flippant.Adapter.Memory,
+                Flippant.Adapter.Postgres,
+                Flippant.Adapter.Redis] do
   defmodule Module.concat(adapter, Test) do
     use ExUnit.Case
 
@@ -96,15 +98,6 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
 
         assert Flippant.breakdown == %{
           "search" => %{"members" => [1, 2, 3]}
-        }
-      end
-
-      test "it ensures that values remain sorted" do
-        Flippant.enable("search", "members", [3, 1])
-        Flippant.enable("search", "members", [4, 2])
-
-        assert Flippant.breakdown() == %{
-          "search" => %{"members" => [1, 2, 3, 4]}
         }
       end
 

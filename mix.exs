@@ -41,7 +41,9 @@ defmodule Flippant.Mixfile do
   end
 
   defp deps do
-    [{:redix, "~> 0.6", optional: true},
+    [{:postgrex, "~> 0.13", optional: true},
+     {:redix, "~> 0.6", optional: true},
+     {:poison, "~> 3.1", optional: true},
 
      {:ex_doc, ">= 0.0.0", only: :dev},
      {:inch_ex, ">= 0.0.0", only: :dev},
