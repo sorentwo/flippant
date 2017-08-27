@@ -14,6 +14,8 @@ for adapter <- [Flippant.Adapter.Memory,
       Application.put_env(:flippant, :adapter, @adapter)
       Application.ensure_started(:flippant)
 
+      Flippant.setup()
+
       :ok
     end
 

@@ -94,6 +94,10 @@ if Code.ensure_loaded?(Redix) do
       {:noreply, state}
     end
 
+    def handle_cast(:setup, state) do
+      {:noreply, state}
+    end
+
     def handle_call({:breakdown, actor}, _from, %{conn: conn} = state) do
       features = fetch_features(state)
       requests = Enum.map(features, &(["HGETALL", &1]))

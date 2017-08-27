@@ -2,12 +2,6 @@ if Code.ensure_loaded(Postgrex) do
   Postgrex.Types.define(Flippant.PostgrexTypes, [], json: Poison)
 
   defmodule Flippant.Adapter.Postgres do
-    # CREATE TABLE flippant_features (
-    #   name varchar(140) NOT NULL CHECK (name <> ''),
-    #   rules json NOT NULL DEFAULT '{}'::json,
-    #   CONSTRAINT unique_name UNIQUE(name)
-    # );
-
     use GenServer
 
     import Postgrex, only: [query!: 3, transaction: 2]
@@ -23,7 +17,7 @@ if Code.ensure_loaded(Postgrex) do
     # Callbacks
 
     def init(opts) do
-      {:ok, _apps} = Application.ensure_all_started(:postgrex)
+      {:ok, _} = Application.ensure_all_started(:postgrex)
 
       opts = Keyword.merge(@defaults, opts)
 
@@ -91,6 +85,20 @@ if Code.ensure_loaded(Postgrex) do
         query!(conn, "DELETE FROM #{table} WHERE name = $1", [new_name])
         query!(conn, "UPDATE #{table} SET name = $1 WHERE name = $2", [new_name, old_name])
       end)
+
+      {:noreply, state}
+    end
+
+    def handle_cast(:setup, %{pid: pid, table: table} = state) do
+      query!(pid,
+             """
+             CREATE TABLE IF NOT EXISTS #{table} (
+               name varchar(140) NOT NULL CHECK (name <> ''),
+               rules jsonb NOT NULL DEFAULT '{}'::jsonb,
+               CONSTRAINT unique_name UNIQUE(name)
+             )
+             """,
+             [])
 
       {:noreply, state}
     end

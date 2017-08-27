@@ -13,6 +13,6 @@ services:
   - postgresql
   - redis-server
 before_script:
-  - psql -c "create database flippant_test;" -U postgres
+  - psql -c "CREATE DATABASE flippant_test;" -U postgres
 addons:
   postgresql: "9.6"

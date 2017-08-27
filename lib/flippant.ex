@@ -227,6 +227,22 @@ defmodule Flippant do
     GenServer.cast(adapter(), {:remove, normalize(feature)})
   end
 
+  @doc """
+  Prepare the adapter for usage.
+
+  For adapters that don't require any setup this is a no-op. For other adapters,
+  such as Postgres, which require a schema/table to operate this will create the
+  necessary table.
+
+  # Example
+
+      iex> Flippant.setup()
+      :ok
+  """
+  def setup do
+    GenServer.cast(adapter(), :setup)
+  end
+
   defdelegate register(group, fun), to: Registry
   defdelegate registered(), to: Registry
 
