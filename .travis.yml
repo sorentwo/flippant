@@ -1,12 +1,18 @@
 language: elixir
 elixir:
   - 1.4.0
+  - 1.5.1
 otp_release:
-  - 19.2
+  - 20.0
 sudo: false
 env:
   - MIX_ENV=test
 script:
   - mix coveralls.travis
 services:
+  - postgresql
   - redis-server
+before_script:
+  - psql -c "create database flippant_test;" -U postgres
+addons:
+  postgresql: "9.6"
