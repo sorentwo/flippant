@@ -13,7 +13,8 @@ if Code.ensure_loaded(Postgrex) do
     import Postgrex, only: [query!: 3, transaction: 2]
     import Flippant.Rules, only: [enabled_for_actor?: 2]
 
-    @default_table "flippant_features"
+    @defaults [postgres_opts: [database: "flippant_test"],
+               table: "flippant_features"]
 
     def start_link(opts \\ []) do
       GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
@@ -24,16 +25,15 @@ if Code.ensure_loaded(Postgrex) do
     def init(opts) do
       {:ok, _apps} = Application.ensure_all_started(:postgrex)
 
+      opts = Keyword.merge(@defaults, opts)
+
       {:ok, pid} =
         opts
         |> Keyword.get(:postgres_opts, [])
-        |> Keyword.put(:database, "flippant_test")
         |> Keyword.put(:types, Flippant.PostgrexTypes)
         |> Postgrex.start_link()
 
-      table = Keyword.get(opts, :table, @default_table)
-
-      {:ok, %{pid: pid, table: table}}
+      {:ok, %{pid: pid, table: Keyword.get(opts, :table)}}
     end
 
     def handle_cast({:add, feature}, %{pid: pid, table: table} = state) do

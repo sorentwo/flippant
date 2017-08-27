@@ -10,7 +10,7 @@ if Code.ensure_loaded?(Redix) do
     import Flippant.Serializer, only: [dump: 1, load: 1]
     import Redix, only: [command!: 2]
 
-    @default_set_key "flippant-features"
+    @defaults [redis_opts: [], set_key: "flippant-features"]
 
     @doc """
     Starts the Redis adapter.
@@ -18,7 +18,7 @@ if Code.ensure_loaded?(Redix) do
     # Options
 
       * `:redis_opts` - Options that can be passed to Redix, the underlying
-        library used to connect to Redis.
+        library used to connect to Redis. Defaults to `[]`.
       * `:set_key` - The Redis key where rules will be stored. Defaults to
         `"flippant-features"`.
     """
@@ -31,14 +31,14 @@ if Code.ensure_loaded?(Redix) do
     def init(opts) do
       {:ok, _} = Application.ensure_all_started(:redix)
 
+      opts = Keyword.merge(@defaults, opts)
+
       {:ok, conn} =
         opts
-        |> Keyword.get(:redis_opts, [])
+        |> Keyword.get(:redis_opts)
         |> parse_opts_and_connect()
 
-      set_key = Keyword.get(opts, :set_key, @default_set_key)
-
-      {:ok, %{conn: conn, set_key: set_key}}
+      {:ok, %{conn: conn, set_key: Keyword.get(opts, :set_key)}}
     end
 
     def handle_cast({:add, feature}, %{conn: conn, set_key: set_key} = state) do
