@@ -110,9 +110,11 @@ for adapter <- [Flippant.Adapter.Memory,
 
         Enum.each(tasks, &Task.await/1)
 
-        assert Flippant.breakdown() == %{
-          "search" => %{"members" => [1, 2, 3, 4, 5, 6]}
-        }
+        breakdown = Flippant.breakdown()
+
+        assert breakdown["search"]
+        assert breakdown["search"]["members"]
+        assert Enum.sort(breakdown["search"]["members"]) == [1, 2, 3, 4, 5, 6]
       end
     end
 
