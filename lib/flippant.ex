@@ -114,6 +114,10 @@ defmodule Flippant do
 
   For adapter specific options reference the `start_link/1` function of each.
 
+  Some adapters, notably the `Postgres` adapter, may require setup before they
+  can be used. To simplify the setup process you can run `Flippant.setup()`, or
+  see the adapters documentation for migration details.
+
   ### Testing
 
   Testing is simplest with the `Memory` adapter. Within `config/test.exs` override

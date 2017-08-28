@@ -3,7 +3,29 @@ if Code.ensure_loaded(Postgrex) do
 
   defmodule Flippant.Adapter.Postgres do
     @moduledoc """
-    This adapter provides Postgres backed rule storage.
+    This adapter provides Postgres 9.5+ backed rule storage.
+
+    The adapter relies on a table with the following structure:
+
+    * `name` - A `text` or `varchar` column with a unique constraint. The
+      adapter makes heavy use of `UPSERT` functionality, which relies on unique
+      names.
+    * `rules` - A `jsonb` column where rules will be stored. The use of jsonb and
+      jsonb specific operators means the Postgres version must be 9.5 or greater.
+
+
+    In the likely chance that you're using managing a database using Ecto you
+    can create a migration to add the `flippant_features` table with the
+    following statement (or an equivalent):
+
+        CREATE TABLE IF NOT EXISTS flippant_features (
+          name varchar(140) NOT NULL CHECK (name <> ''),
+          rules jsonb NOT NULL DEFAULT '{}'::jsonb,
+          CONSTRAINT unique_name UNIQUE(name)
+        )
+
+    If you prefer you can also use the adapters `setup/0` function to create
+    the table automatically.
     """
 
     use GenServer
