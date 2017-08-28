@@ -1,4 +1,6 @@
-for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
+for adapter <- [Flippant.Adapter.Memory,
+                Flippant.Adapter.Postgres,
+                Flippant.Adapter.Redis] do
   defmodule Module.concat(adapter, Test) do
     use ExUnit.Case
 
@@ -11,6 +13,8 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
       Application.stop(:flippant)
       Application.put_env(:flippant, :adapter, @adapter)
       Application.ensure_started(:flippant)
+
+      Flippant.setup()
 
       :ok
     end
@@ -99,15 +103,6 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
         }
       end
 
-      test "it ensures that values remain sorted" do
-        Flippant.enable("search", "members", [3, 1])
-        Flippant.enable("search", "members", [4, 2])
-
-        assert Flippant.breakdown() == %{
-          "search" => %{"members" => [1, 2, 3, 4]}
-        }
-      end
-
       test "it operates atomically to avoid race conditions" do
         tasks = for value <- 1..6 do
           Task.async(fn -> Flippant.enable("search", "members", [value]) end)
@@ -115,9 +110,11 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Redis] do
 
         Enum.each(tasks, &Task.await/1)
 
-        assert Flippant.breakdown() == %{
-          "search" => %{"members" => [1, 2, 3, 4, 5, 6]}
-        }
+        breakdown = Flippant.breakdown()
+
+        assert breakdown["search"]
+        assert breakdown["search"]["members"]
+        assert Enum.sort(breakdown["search"]["members"]) == [1, 2, 3, 4, 5, 6]
       end
     end
 

@@ -24,7 +24,7 @@ defmodule Flippant.Mixfile do
   def application do
     [extra_applications: [:logger],
      env: [adapter: Flippant.Adapter.Memory],
-     mod: {Flippant, []}]
+     mod: {Flippant.Application, []}]
   end
 
   defp description do
@@ -41,21 +41,18 @@ defmodule Flippant.Mixfile do
   end
 
   defp deps do
-    [{:redix, "~> 0.5", optional: true},
+    [{:postgrex, "~> 0.13", optional: true},
+     {:redix, "~> 0.6", optional: true},
+     {:poison, "~> 3.1", optional: true},
 
      {:ex_doc, ">= 0.0.0", only: :dev},
      {:inch_ex, ">= 0.0.0", only: :dev},
-     {:excoveralls, "~> 0.6", only: [:dev, :test]}]
+     {:excoveralls, "~> 0.7", only: [:dev, :test]}]
   end
 
   defp docs do
-    [main: "readme",
-     formatter_opts: [gfm: true],
+    [main: "flippant",
      source_ref: @version,
-     source_url: "https://github.com/sorentwo/flippant",
-     extras: [
-       "CHANGELOG.md",
-       "README.md"
-    ]]
+     source_url: "https://github.com/sorentwo/flippant"]
   end
 end

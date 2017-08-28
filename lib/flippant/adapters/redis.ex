@@ -10,7 +10,7 @@ if Code.ensure_loaded?(Redix) do
     import Flippant.Serializer, only: [dump: 1, load: 1]
     import Redix, only: [command!: 2]
 
-    @default_set_key "flippant-features"
+    @defaults [redis_opts: [], set_key: "flippant-features"]
 
     @doc """
     Starts the Redis adapter.
@@ -18,7 +18,7 @@ if Code.ensure_loaded?(Redix) do
     # Options
 
       * `:redis_opts` - Options that can be passed to Redix, the underlying
-        library used to connect to Redis.
+        library used to connect to Redis. Defaults to `[]`.
       * `:set_key` - The Redis key where rules will be stored. Defaults to
         `"flippant-features"`.
     """
@@ -29,14 +29,16 @@ if Code.ensure_loaded?(Redix) do
     # Callbacks
 
     def init(opts) do
+      {:ok, _} = Application.ensure_all_started(:redix)
+
+      opts = Keyword.merge(@defaults, opts)
+
       {:ok, conn} =
         opts
-        |> Keyword.get(:redis_opts, [])
+        |> Keyword.get(:redis_opts)
         |> parse_opts_and_connect()
 
-      set_key = Keyword.get(opts, :set_key, @default_set_key)
-
-      {:ok, %{conn: conn, set_key: set_key}}
+      {:ok, %{conn: conn, set_key: Keyword.get(opts, :set_key)}}
     end
 
     def handle_cast({:add, feature}, %{conn: conn, set_key: set_key} = state) do
@@ -49,7 +51,7 @@ if Code.ensure_loaded?(Redix) do
       new_values = merge_values(old_values, values)
 
       pipeline!(conn, [["SADD", set_key, feature],
-                      ["HSET", feature, group, new_values]])
+                       ["HSET", feature, group, new_values]])
 
       {:noreply, state}
     end
@@ -62,7 +64,7 @@ if Code.ensure_loaded?(Redix) do
 
     def handle_cast({:remove, feature}, %{conn: conn, set_key: set_key} = state) do
       pipeline!(conn, [["SREM", set_key, feature],
-                      ["DEL", feature]])
+                       ["DEL", feature]])
 
       {:noreply, state}
     end
@@ -92,10 +94,14 @@ if Code.ensure_loaded?(Redix) do
       {:noreply, state}
     end
 
+    def handle_cast(:setup, state) do
+      {:noreply, state}
+    end
+
     def handle_call({:breakdown, actor}, _from, %{conn: conn} = state) do
       features = fetch_features(state)
       requests = Enum.map(features, &(["HGETALL", &1]))
-      results  = pipeline!(conn, requests)
+      results = pipeline!(conn, requests)
 
       breakdown =
         features
@@ -134,7 +140,7 @@ if Code.ensure_loaded?(Redix) do
     def handle_call({:features, group}, _from, %{conn: conn} = state) do
       features = fetch_features(state)
       requests = Enum.map(features, &(["HEXISTS", &1, group]))
-      results  = pipeline!(conn, requests)
+      results = pipeline!(conn, requests)
 
       features =
         features
@@ -164,7 +170,7 @@ if Code.ensure_loaded?(Redix) do
     defp fetch_features(%{conn: conn, set_key: set_key}) do
       conn
       |> command!(["SMEMBERS", set_key])
-      |> Enum.sort
+      |> Enum.sort()
     end
 
     defp diff_values(nil, new_values) do

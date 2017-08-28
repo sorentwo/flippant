@@ -79,6 +79,10 @@ defmodule Flippant.Adapter.Memory do
     {:noreply, table}
   end
 
+  def handle_cast(:setup, table) do
+    {:noreply, table}
+  end
+
   def handle_call({:breakdown, actor}, _from, table) do
     fun = fn({feature, rules}), acc ->
       Map.put(acc, feature, breakdown_value(rules, actor))
