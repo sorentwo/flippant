@@ -1,4 +1,200 @@
 defmodule Flippant do
+  @moduledoc """
+  Feature toggling for Elixir applications.
+
+  Flippant defines features in terms of `actors`, `groups`, and `rules`:
+
+  * **Actors** - Typically an actor is a `%User{}` or some other persistent
+    struct that identifies who is using your application.
+  * **Groups** - Groups identify and qualify actors. For example, the `admins`
+    group would identify actors that are admins, while `beta-testers` may
+    identify a few actors that are testing a feature. It is entirely up to you
+    to define groups in your application.
+  * **Rules** - Rules bind groups with individual features. These are evaluated
+    against actors to see if a feature should be enabled.
+
+  Let's walk through setting up a few groups and rules.
+
+  ### Groups
+
+  First, a group that nobody can belong to. This is useful for disabling a
+  feature without deleting it. Groups are registered with a `name` and an
+  evalutation `function`. In this case the name of our group is "nobody",
+  and the function always returns `false`:
+
+      Flippant.register("nobody", fn(_actor, _values) -> false end)
+
+  Now the opposite, a group that everybody can belong to:
+
+      Flippant.register("everybody", fn(_actor, _values) -> true end)
+
+  To be more specific and define staff only features we define a "staff" group:
+
+      Flippant.register("staff", fn
+        %User{staff?: staff?}, _values -> staff?
+      end)
+
+  Lastly, we'll roll out a feature out to a percentage of the actors. It
+  expects a list of integers between `1` and `10`. If the user's id modulo `10`
+  is in the list, then the feature is enabled:
+
+      Flippant.register("adopters", fn
+        _actor, [] -> false
+        %User{id: id}, samples -> rem(id, 10) in samples
+      end)
+
+  With some core groups defined we can set up some rules now.
+
+  ### Rules
+
+  Rules are comprised of a name, a group, and an optional set of values. Starting
+  with a simple example that builds on the groups we have already created, we'll
+  enable the "search" feature:
+
+      # Any staff can use the "search" feature
+      Flippant.enable("search", "staff")
+
+      # 30% of "adopters" can use the "search" feature as well
+      Flippant.enable("search", "adopters", [0, 1, 2])
+
+  Because rules are built of binaries and simple data they can be defined or
+  refined at runtime. In fact, this is a crucial part of feature toggling.
+  Rules can be added, removed or modified at runtime.
+
+      # Turn search off for adopters
+      Flippant.disable("search", "adopters")
+
+      # On second thought, enable it again for 10% of users
+      Flippant.enable("search", "adopters", [3])
+
+  With a set of groups and rules defined we can check whether a feature is
+  enabled for a particular actor:
+
+      staff_user = %User{id: 1, staff?: true}
+      early_user = %User{id: 2, staff?: false}
+      later_user = %User{id: 3, staff?: false}
+
+      Flippant.enabled?("search", staff_user) #=> true, staff
+      Flippant.enabled?("search", early_user) #=> false, not an adopter
+      Flippant.enabled?("search", later_user) #=> true, is an adopter
+
+  If an actor qualifies for multiple groups and *any* of the rules evaluate to
+  true that feature will be enabled for them. Think of the "nobody" and
+  "everybody" groups that were defined earlier:
+
+      Flippant.enable("search", "everybody")
+      Flippant.enable("search", "nobody")
+
+      Flippant.enabled?("search", %User{}) #=> true
+
+  ### Breakdown
+
+  Evaluating rules requires a round trip to the database. Clearly, with a lot
+  of rules it is inefficient to evaluate each one individually. The
+  `breakdown/1` function helps with this scenario:
+
+      Flippant.enable("search", "staff")
+      Flippant.enable("delete", "everybody")
+      Flippant.enable("invite", "nobody")
+
+      Flippant.breakdown(%User{id: 1, staff?: true})
+      #=> %{"search" => true, "delete" => true, "invite" => false}
+
+  The breakdown is a simple map of binary keys to boolean values. This is
+  particularly useful for single page applications where you can serialize the
+  breakdown on boot or send it back from an endpoint as JSON.
+
+  ### Adapters
+
+  Feature rules are stored in adapters. Flippant comes with a few base adapters:
+
+  * `Flippant.Adapters.Memory` - An in-memory adapter, ideal for testing (see below).
+  * `Flippant.Adapters.Postgres` - A postgrex powered PostgreSQL adapter.
+  * `Flippant.Adapters.Redis` - A redix powered Redis adapter.
+
+  For adapter specific options reference the `start_link/1` function of each.
+
+  ### Testing
+
+  Testing is simplest with the `Memory` adapter. Within `config/test.exs` override
+  the `:adapter`:
+
+      config :flippant, adapter: Flippant.Adapters.Memory
+
+  The memory adapter will be cleared whenever the application is restarted, or
+  it can be cleared between test runs using `Flippant.clear(:features)`.
+
+  ### Defining Groups on Application Start
+
+  Group definitions are stored in a process, which requires the Flippant
+  application to be started. That means they can't be defined within a
+  configuration file and should instead be linked from `Application.start/2`.
+  You can make `Flippant.register/2` calls directly from the application
+  module, or put them into a separate module and start it as a temporary
+  worker.  Here we're starting a temporary worker with the rest of an
+  application:
+
+      defmodule MyApp do
+        use Application
+
+        def start(_type, _args) do
+          import Supervisor.Spec, warn: false
+
+          children = [
+            worker(MyApp.Flippant, [], restart: :temporary)
+          ]
+
+          opts = [strategy: :one_for_one, name: MyApp.Supervisor]
+
+          Supervisor.start_link(children, opts)
+        end
+      end
+
+  Note that the worker is defined with `restart: :temporary`. Now, define the
+  `MyApp.Flippant` module:
+
+      defmodule MyApp.Flippant do
+        def start_link do
+          Flippant.register("everybody", &everybody?/2)
+          Flippant.register("nobody", &nobody?/2)
+          Flippant.register("staff", &staff?/2)
+
+          :ignore
+        end
+
+        def everybody?(_, _), do: true
+        def nobody?(_, _), do: false
+        def staff?(%User{staff?: staff?}, _), do: staff?
+      end
+
+  ### Customizing Serialization
+
+  Storing values along with rules is an important part of scoping features.
+  Values can be any type of data structure, including integers, binaries, lists
+  or maps. This adds a great deal of additional power to group evaluation, but
+  it means that the values must be serialized in a high fidelity way.
+
+  By default, values are stored using Erlang's binary term storage. This works
+  perfectly fine, but isn't especially readable and isn't compatible with other
+  languages. If you'd prefer to use `JSON` or `MessagePack` instead you can
+  provide a custom serializer and configure Flippant to use that instead. For
+  example, to use MessagePack via the `Msgpax` libary:
+
+      defmodule MyApp.Serializer do
+        @behaviour Flippant.Serializer
+
+        def dump(value), do: Msgpax.pack!(value)
+        def load(value), do: Msgpax.unpack!(value)
+      end
+
+  Then, within `config.exs` set the serializer:
+
+      config :flippant, serializer: MyApp.Serializer
+
+  Not all adapters have customizable serialization. For example, the `Postgres`
+  adapter uses the `jsonb` type and therefor requires a `JSON` serializer.
+  """
+
   alias Flippant.Registry
 
   # Adapter

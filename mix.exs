@@ -51,13 +51,8 @@ defmodule Flippant.Mixfile do
   end
 
   defp docs do
-    [main: "readme",
-     formatter_opts: [gfm: true],
+    [main: "flippant",
      source_ref: @version,
-     source_url: "https://github.com/sorentwo/flippant",
-     extras: [
-       "CHANGELOG.md",
-       "README.md"
-    ]]
+     source_url: "https://github.com/sorentwo/flippant"]
   end
 end
