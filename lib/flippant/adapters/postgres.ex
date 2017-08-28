@@ -2,6 +2,10 @@ if Code.ensure_loaded(Postgrex) do
   Postgrex.Types.define(Flippant.PostgrexTypes, [], json: Poison)
 
   defmodule Flippant.Adapter.Postgres do
+    @moduledoc """
+    This adapter provides Postgres backed rule storage.
+    """
+
     use GenServer
 
     import Postgrex, only: [query!: 3, transaction: 2]
@@ -10,6 +14,16 @@ if Code.ensure_loaded(Postgrex) do
     @defaults [postgres_opts: [database: "flippant_test"],
                table: "flippant_features"]
 
+    @doc """
+    Starts the Postgres adapter.
+
+    ## Options
+
+      * `:postgres_opts` - Options that can be passed to Postgrex, the underlying
+        library used to connect to Postgres. At a minimum the `database` must be set,
+        otherwise it will attempt to connect to the `flippant_test` database.
+      * `table` - The table where rules will be stored. Defaults to `flippant_features`.
+    """
     def start_link(opts \\ []) do
       GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
     end
