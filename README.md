@@ -36,7 +36,7 @@
 
 ## Usage
 
-Complete [documentation is available online][https://hexdocs.pm/flippant], but
+Complete [documentation is available online](https://hexdocs.pm/flippant), but
 here is a breif overview:
 
 Features are comprised of `groups`, and `rules`. Your application defines named
