@@ -32,29 +32,40 @@ defmodule Flippant.Registry do
       #=> :ok
   """
 
+  use GenServer
+
   @doc """
   Start the registry process.
   """
-  @spec start_link() :: Agent.on_start
-  def start_link do
-    Agent.start_link(fn -> MapSet.new() end, name: __MODULE__)
+  @spec start_link() :: GenServer.on_start
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
   end
 
   @doc false
   @spec clear() :: :ok
   def clear do
-    Agent.update(__MODULE__, fn(_) -> MapSet.new() end)
+    :ets.delete_all_objects(__MODULE__)
+    :ok
   end
 
   @doc false
   @spec register(binary, fun) :: :ok
   def register(group, fun) do
-    Agent.update(__MODULE__, &MapSet.put(&1, {group, fun}))
+    :ets.insert(__MODULE__, {group, fun})
   end
 
   @doc false
   @spec registered() :: map
   def registered() do
-    Agent.get(__MODULE__, & Enum.into(&1, %{}))
+    folder = fn({group, fun}), acc -> Map.put(acc, group, fun) end
+
+    :ets.foldl(folder, %{}, __MODULE__)
+  end
+
+  # Callbacks
+
+  def init(_opts) do
+    {:ok, :ets.new(__MODULE__, [:named_table, :public, read_concurrency: true])}
   end
 end
