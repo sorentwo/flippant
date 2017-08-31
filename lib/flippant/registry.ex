@@ -45,14 +45,15 @@ defmodule Flippant.Registry do
   @doc false
   @spec clear() :: :ok
   def clear do
-    :ets.delete_all_objects(__MODULE__)
+    true = :ets.delete_all_objects(__MODULE__)
     :ok
   end
 
   @doc false
   @spec register(binary, fun) :: :ok
   def register(group, fun) do
-    :ets.insert(__MODULE__, {group, fun})
+    true = :ets.insert(__MODULE__, {group, fun})
+    :ok
   end
 
   @doc false
