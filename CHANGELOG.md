@@ -1,3 +1,7 @@
+## v0.4.2 2017-10-20
+
+* [Flippant] - Documentation fixes to correct hexdocs loading.
+
 ## v0.4.1 2017-10-20
 
 * [Flippant] - Revert the elixir constraint to `~> 1.4`

@@ -1,7 +1,7 @@
 defmodule Flippant.Mixfile do
   use Mix.Project
 
-  @version "0.4.1"
+  @version "0.4.2"
 
   def project do
     [app: :flippant,
@@ -51,8 +51,11 @@ defmodule Flippant.Mixfile do
   end
 
   defp docs do
-    [main: "flippant",
+    [main: "Flippant",
      source_ref: @version,
-     source_url: "https://github.com/sorentwo/flippant"]
+     source_url: "https://github.com/sorentwo/flippant",
+     extras: [
+        "CHANGELOG.md"
+     ]]
   end
 end
