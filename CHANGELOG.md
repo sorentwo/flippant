@@ -1,3 +1,7 @@
+## v0.4.1 2017-10-20
+
+* [Flippant] - Revert the elixir constraint to `~> 1.4`
+
 ## v0.4.0 2017-10-20
 
 ### Enhancements

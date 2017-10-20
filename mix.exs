@@ -1,12 +1,12 @@
 defmodule Flippant.Mixfile do
   use Mix.Project
 
-  @version "0.4.0"
+  @version "0.4.1"
 
   def project do
     [app: :flippant,
      version: @version,
-     elixir: "~> 1.5",
+     elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
 
