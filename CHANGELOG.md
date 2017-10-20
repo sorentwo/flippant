@@ -1,3 +1,30 @@
+## v0.4.0 2017-10-20
+
+### Enhancements
+
+* [Flippant] - Add a new Postgres adatper, backed by Postgrex.
+* [Flippant] - Add `exists?/1` for checking whether a feature exists at all,
+  and `exists?/2` for checking whether a feature exists for a particular group.
+* [Flippant] - Add `rename/2` for renaming existing features.
+* [Flippant] - Merge additional values when enabling features. This prevents
+  clobbering existing values in "last write wins" situations.
+* [Flippant] - Support enabling or disabling of individual values. This makes it
+  possible to remove a single value from a group's rules.
+* [Flippant] - Add `setup/0` to facilitate adapter setup (i.e. Postgres).
+* [Flippant.Adapters.Redis] - Accept options to configure the adapter's set key.
+
+### Changes
+
+* [Flippant.Adapter] - Values are no longer guaranteed to be sorted. Some
+  adapters guarantee sorting, but race conditions prevent it in the Postgres
+  adapter, so it is no longer guaranteed.
+* [Flippant.Registry] - Use a named ETS table for rule storage rather than an
+  Agent. This is slightly faster, and it prepares us for crash recovery.
+
+### Bug Fixes
+
+* [Flippant] - Correct guard logic for multiple `when` clauses.
+
 ## v0.3.0 2016-09-20
 
 ### Enhancements
