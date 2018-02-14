@@ -1,5 +1,5 @@
 if Code.ensure_loaded(Postgrex) do
-  Postgrex.Types.define(Flippant.PostgrexTypes, [], json: Poison)
+  Postgrex.Types.define(Flippant.PostgrexTypes, [], json: Jason)
 
   defmodule Flippant.Adapter.Postgres do
     @moduledoc """
