@@ -289,12 +289,15 @@ defmodule Flippant do
   """
   @spec clear(:features | :groups) :: :ok
   def clear(selection \\ nil)
+
   def clear(:features) do
     GenServer.cast(adapter(), :clear)
   end
+
   def clear(:groups) do
     Registry.clear()
   end
+
   def clear(_) do
     :ok = clear(:groups)
     :ok = clear(:features)
@@ -326,10 +329,7 @@ defmodule Flippant do
   """
   @spec disable(binary, binary) :: :ok
   def disable(feature, group, values \\ [])
-      when is_binary(feature)
-      and is_binary(group)
-      and is_list(values) do
-
+      when is_binary(feature) and is_binary(group) and is_list(values) do
     GenServer.cast(adapter(), {:remove, normalize(feature), group, values})
   end
 
@@ -361,9 +361,7 @@ defmodule Flippant do
   """
   @spec enable(binary, binary, list(any)) :: :ok
   def enable(feature, group, values \\ [])
-      when is_binary(feature)
-      and is_binary(group) do
-
+      when is_binary(feature) and is_binary(group) do
     GenServer.cast(adapter(), {:add, normalize(feature), {group, values}})
   end
 
@@ -439,9 +437,7 @@ defmodule Flippant do
   """
   @spec rename(binary, binary) :: :ok
   def rename(old_name, new_name)
-      when is_binary(old_name)
-      and is_binary(new_name) do
-
+      when is_binary(old_name) and is_binary(new_name) do
     GenServer.cast(adapter(), {:rename, normalize(old_name), normalize(new_name)})
   end
 

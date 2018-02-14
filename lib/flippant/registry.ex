@@ -37,9 +37,9 @@ defmodule Flippant.Registry do
   @doc """
   Start the registry process.
   """
-  @spec start_link() :: GenServer.on_start
+  @spec start_link() :: GenServer.on_start()
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc false
@@ -59,7 +59,7 @@ defmodule Flippant.Registry do
   @doc false
   @spec registered() :: map
   def registered() do
-    folder = fn({group, fun}), acc -> Map.put(acc, group, fun) end
+    folder = fn {group, fun}, acc -> Map.put(acc, group, fun) end
 
     :ets.foldl(folder, %{}, __MODULE__)
   end

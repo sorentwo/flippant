@@ -1,6 +1,4 @@
-for adapter <- [Flippant.Adapter.Memory,
-                Flippant.Adapter.Postgres,
-                Flippant.Adapter.Redis] do
+for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Adapter.Redis] do
   defmodule Module.concat(adapter, Test) do
     use ExUnit.Case
 
@@ -45,7 +43,7 @@ for adapter <- [Flippant.Adapter.Memory,
 
     test "clear/0 removes all known groups and features" do
       Flippant.add("search")
-      Flippant.register("awesome", fn(_, _) -> true end)
+      Flippant.register("awesome", fn _, _ -> true end)
 
       assert Flippant.features() != []
       assert Flippant.registered() != %{}
@@ -58,7 +56,7 @@ for adapter <- [Flippant.Adapter.Memory,
 
     test "clear/1 removes either groups or features" do
       Flippant.add("search")
-      Flippant.register("awesome", fn(_, _) -> true end)
+      Flippant.register("awesome", fn _, _ -> true end)
 
       Flippant.clear(:features)
 
@@ -98,15 +96,16 @@ for adapter <- [Flippant.Adapter.Memory,
         Flippant.enable("search", "members", [])
         Flippant.enable("search", "members", [2, 3])
 
-        assert Flippant.breakdown == %{
-          "search" => %{"members" => [1, 2, 3]}
-        }
+        assert Flippant.breakdown() == %{
+                 "search" => %{"members" => [1, 2, 3]}
+               }
       end
 
       test "it operates atomically to avoid race conditions" do
-        tasks = for value <- 1..6 do
-          Task.async(fn -> Flippant.enable("search", "members", [value]) end)
-        end
+        tasks =
+          for value <- 1..6 do
+            Task.async(fn -> Flippant.enable("search", "members", [value]) end)
+          end
 
         Enum.each(tasks, &Task.await/1)
 
@@ -135,22 +134,23 @@ for adapter <- [Flippant.Adapter.Memory,
         Flippant.disable("search", "members", [2])
 
         assert Flippant.breakdown() == %{
-          "search" => %{"members" => [1]}
-        }
+                 "search" => %{"members" => [1]}
+               }
       end
 
       test "operates atomically to avoid race conditions" do
         Flippant.enable("search", "members", [1, 2, 3, 4, 5])
 
-        tasks = for value <- [1, 3, 5] do
-          Task.async(fn -> Flippant.disable("search", "members", [value]) end)
-        end
+        tasks =
+          for value <- [1, 3, 5] do
+            Task.async(fn -> Flippant.disable("search", "members", [value]) end)
+          end
 
         Enum.each(tasks, &Task.await/1)
 
         assert Flippant.breakdown() == %{
-          "search" => %{"members" => [2, 4]}
-        }
+                 "search" => %{"members" => [2, 4]}
+               }
       end
     end
 
@@ -178,13 +178,13 @@ for adapter <- [Flippant.Adapter.Memory,
         Flippant.rename("search", "super-search")
 
         assert Flippant.breakdown() == %{
-          "super-search" => %{"members" => [1]}
-        }
+                 "super-search" => %{"members" => [1]}
+               }
       end
     end
 
     test "enabled?/2 checks a feature for an actor" do
-      Flippant.register("staff", fn(actor, _values) -> actor.staff? end)
+      Flippant.register("staff", fn actor, _values -> actor.staff? end)
 
       actor_a = %{id: 1, staff?: true}
       actor_b = %{id: 2, staff?: false}
@@ -199,8 +199,8 @@ for adapter <- [Flippant.Adapter.Memory,
     end
 
     test "enabled?/2 checks for a feature against multiple groups" do
-      Flippant.register("awesome", fn(actor, _) -> actor.awesome? end)
-      Flippant.register("radical", fn(actor, _) -> actor.radical? end)
+      Flippant.register("awesome", fn actor, _ -> actor.awesome? end)
+      Flippant.register("radical", fn actor, _ -> actor.radical? end)
 
       actor_a = %{id: 1, awesome?: true, radical?: false}
       actor_b = %{id: 2, awesome?: false, radical?: true}
@@ -215,7 +215,7 @@ for adapter <- [Flippant.Adapter.Memory,
     end
 
     test "enabled?/2 uses rule values when checking" do
-      Flippant.register("awesome", fn(actor, ids) -> actor.id in ids end)
+      Flippant.register("awesome", fn actor, ids -> actor.id in ids end)
 
       actor_a = %{id: 1}
       actor_b = %{id: 5}
@@ -250,9 +250,9 @@ for adapter <- [Flippant.Adapter.Memory,
       end
 
       test "it lists all features with their metadata" do
-        Flippant.register("awesome", fn(_, _) -> true end)
-        Flippant.register("radical", fn(_, _) -> false end)
-        Flippant.register("heinous", fn(_, _) -> false end)
+        Flippant.register("awesome", fn _, _ -> true end)
+        Flippant.register("radical", fn _, _ -> false end)
+        Flippant.register("heinous", fn _, _ -> false end)
 
         Flippant.enable("search", "awesome")
         Flippant.enable("search", "heinous", [1, 2])
@@ -260,10 +260,10 @@ for adapter <- [Flippant.Adapter.Memory,
         Flippant.enable("invite", "heinous", [5, 6])
 
         assert Flippant.breakdown() == %{
-          "search" => %{"awesome" => [], "heinous" => [1, 2]},
-          "delete" => %{"radical" => []},
-          "invite" => %{"heinous" => [5, 6]}
-        }
+                 "search" => %{"awesome" => [], "heinous" => [1, 2]},
+                 "delete" => %{"radical" => []},
+                 "invite" => %{"heinous" => [5, 6]}
+               }
       end
     end
 
@@ -273,9 +273,9 @@ for adapter <- [Flippant.Adapter.Memory,
       end
 
       test "it lists all enabled features for an actor" do
-        Flippant.register("awesome", fn(actor, _) -> actor.awesome? end)
-        Flippant.register("radical", fn(actor, _) -> actor.radical? end)
-        Flippant.register("heinous", fn(actor, _) -> !actor.awesome? end)
+        Flippant.register("awesome", fn actor, _ -> actor.awesome? end)
+        Flippant.register("radical", fn actor, _ -> actor.radical? end)
+        Flippant.register("heinous", fn actor, _ -> !actor.awesome? end)
 
         actor = %{id: 1, awesome?: true, radical?: true}
 
@@ -289,10 +289,10 @@ for adapter <- [Flippant.Adapter.Memory,
         assert Map.keys(breakdown) == ~w(delete invite search)
 
         assert breakdown == %{
-          "delete" => true,
-          "invite" => false,
-          "search" => true
-        }
+                 "delete" => true,
+                 "invite" => false,
+                 "search" => true
+               }
       end
     end
   end

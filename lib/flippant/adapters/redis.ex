@@ -23,7 +23,7 @@ if Code.ensure_loaded?(Redix) do
         `"flippant-features"`.
     """
     def start_link(opts \\ []) do
-      GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
+      GenServer.start_link(__MODULE__, opts, name: __MODULE__)
     end
 
     # Callbacks
@@ -46,12 +46,12 @@ if Code.ensure_loaded?(Redix) do
 
       {:noreply, state}
     end
+
     def handle_cast({:add, feature, {group, values}}, %{conn: conn, set_key: set_key} = state) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = merge_values(old_values, values)
 
-      pipeline!(conn, [["SADD", set_key, feature],
-                       ["HSET", feature, group, new_values]])
+      pipeline!(conn, [["SADD", set_key, feature], ["HSET", feature, group, new_values]])
 
       {:noreply, state}
     end
@@ -63,19 +63,20 @@ if Code.ensure_loaded?(Redix) do
     end
 
     def handle_cast({:remove, feature}, %{conn: conn, set_key: set_key} = state) do
-      pipeline!(conn, [["SREM", set_key, feature],
-                       ["DEL", feature]])
+      pipeline!(conn, [["SREM", set_key, feature], ["DEL", feature]])
 
       {:noreply, state}
     end
+
     def handle_cast({:remove, feature, group, []}, %{conn: conn, set_key: set_key} = state) do
       with _count <- command!(conn, ["HDEL", feature, group]),
-               [] <- command!(conn, ["HGETALL", feature]),
+           [] <- command!(conn, ["HGETALL", feature]),
            _count <- command!(conn, ["SREM", set_key, feature]),
-       do: :ok
+           do: :ok
 
       {:noreply, state}
     end
+
     def handle_cast({:remove, feature, group, values}, %{conn: conn} = state) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = diff_values(old_values, values)
@@ -86,10 +87,12 @@ if Code.ensure_loaded?(Redix) do
     end
 
     def handle_cast({:rename, old_name, new_name}, %{conn: conn, set_key: set_key} = state) do
-      pipeline!(conn, [["WATCH", old_name, new_name],
-                       ["SREM", set_key, old_name],
-                       ["SADD", set_key, new_name],
-                       ["RENAME", old_name, new_name]])
+      pipeline!(conn, [
+        ["WATCH", old_name, new_name],
+        ["SREM", set_key, old_name],
+        ["SADD", set_key, new_name],
+        ["RENAME", old_name, new_name]
+      ])
 
       {:noreply, state}
     end
@@ -100,15 +103,15 @@ if Code.ensure_loaded?(Redix) do
 
     def handle_call({:breakdown, actor}, _from, %{conn: conn} = state) do
       features = fetch_features(state)
-      requests = Enum.map(features, &(["HGETALL", &1]))
+      requests = Enum.map(features, &["HGETALL", &1])
       results = pipeline!(conn, requests)
 
       breakdown =
         features
         |> Enum.zip(results)
-        |> Enum.reduce(%{}, fn({feature, rules}, acc) ->
-             Map.put(acc, feature, breakdown_value(decode_rules(rules), actor))
-           end)
+        |> Enum.reduce(%{}, fn {feature, rules}, acc ->
+          Map.put(acc, feature, breakdown_value(decode_rules(rules), actor))
+        end)
 
       {:reply, breakdown, state}
     end
@@ -128,6 +131,7 @@ if Code.ensure_loaded?(Redix) do
 
       {:reply, enabled, state}
     end
+
     def handle_call({:exists?, feature, group}, _from, %{conn: conn} = state) do
       enabled = command!(conn, ["HEXISTS", feature, group]) == 1
 
@@ -137,16 +141,17 @@ if Code.ensure_loaded?(Redix) do
     def handle_call({:features, :all}, _from, state) do
       {:reply, fetch_features(state), state}
     end
+
     def handle_call({:features, group}, _from, %{conn: conn} = state) do
       features = fetch_features(state)
-      requests = Enum.map(features, &(["HEXISTS", &1, group]))
+      requests = Enum.map(features, &["HEXISTS", &1, group])
       results = pipeline!(conn, requests)
 
       features =
         features
         |> Enum.zip(results)
-        |> Enum.filter(& elem(&1, 1) == 1)
-        |> Enum.map(& elem(&1, 0))
+        |> Enum.filter(&(elem(&1, 1) == 1))
+        |> Enum.map(&elem(&1, 0))
 
       {:reply, features, state}
     end
@@ -156,6 +161,7 @@ if Code.ensure_loaded?(Redix) do
     defp breakdown_value(rules, :all) do
       Enum.into(rules, %{})
     end
+
     defp breakdown_value(rules, actor) do
       enabled_for_actor?(rules, actor)
     end
@@ -176,6 +182,7 @@ if Code.ensure_loaded?(Redix) do
     defp diff_values(nil, new_values) do
       dump(new_values)
     end
+
     defp diff_values(old_values, new_values) do
       old_values
       |> load()
@@ -186,9 +193,11 @@ if Code.ensure_loaded?(Redix) do
     defp merge_values(nil, new_values) do
       dump(new_values)
     end
+
     defp merge_values(old_values, []) do
       old_values
     end
+
     defp merge_values(old_values, new_values) do
       old_values
       |> load()
@@ -200,6 +209,7 @@ if Code.ensure_loaded?(Redix) do
     defp pipeline!(_conn, []) do
       []
     end
+
     defp pipeline!(conn, requests) do
       Redix.pipeline!(conn, requests)
     end

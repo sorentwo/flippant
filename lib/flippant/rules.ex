@@ -16,7 +16,7 @@ defmodule Flippant.Rules do
   Without a third argument of the groups to be checked it falls back to
   collecting the globally registered groups.
   """
-  @spec enabled_for_actor?(list, any, Map.t) :: boolean
+  @spec enabled_for_actor?(list, any, Map.t()) :: boolean
   def enabled_for_actor?(rules, actor, groups \\ nil) do
     groups = groups || Registry.registered()
 

@@ -6,15 +6,15 @@ defmodule Flippant.SerializerTest do
 
   describe "serializer/0" do
     test "defaults to term storage" do
-      assert Serializer.serializer == Term
+      assert Serializer.serializer() == Term
     end
 
     test "uses the configured serializer" do
-      on_exit fn -> Application.delete_env(:flippant, :serializer) end
+      on_exit(fn -> Application.delete_env(:flippant, :serializer) end)
 
       Application.put_env(:flippant, :serializer, :custom)
 
-      assert Serializer.serializer == :custom
+      assert Serializer.serializer() == :custom
     end
   end
 

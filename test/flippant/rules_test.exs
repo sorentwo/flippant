@@ -5,7 +5,7 @@ defmodule Flippant.RulesTest do
 
   describe "enabled_for_actor?/3" do
     actor = %{id: 1, name: "Parker"}
-    group = %{"chosen" => fn(%{id: id}, value) -> id == value end}
+    group = %{"chosen" => fn %{id: id}, value -> id == value end}
 
     refute Rules.enabled_for_actor?([], actor)
     refute Rules.enabled_for_actor?([], actor, %{})
