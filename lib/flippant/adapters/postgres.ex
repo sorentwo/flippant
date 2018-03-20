@@ -79,7 +79,13 @@ if Code.ensure_loaded(Postgrex) do
         """
         INSERT INTO #{table} AS t (name, rules) VALUES ($1, $2)
         ON CONFLICT (name) DO UPDATE
-        SET rules = jsonb_set(t.rules, $3, (COALESCE(t.rules#>$3, '[]'::jsonb) || $4))
+        SET rules = jsonb_set(t.rules, $3, array_to_json(
+          ARRAY(
+            SELECT DISTINCT(UNNEST(ARRAY(
+              SELECT jsonb_array_elements(COALESCE(t.rules#>$3, '[]'::jsonb))
+            ) || $4))
+          )
+        )::jsonb)
         """,
         [feature, %{group => values}, [group], values]
       )
@@ -106,24 +112,20 @@ if Code.ensure_loaded(Postgrex) do
     end
 
     def handle_cast({:remove, feature, group, values}, %{pid: pid, table: table} = state) do
-      {:ok, _} =
-        transaction(pid, fn conn ->
-          case query!(conn, "SELECT rules#>$1 FROM #{table} WHERE name = $2 AND rules ? $3", [
-                 [group],
-                 feature,
-                 group
-               ]) do
-            %{rows: [[old_values]]} ->
-              query!(
-                conn,
-                "UPDATE #{table} SET rules = jsonb_set(rules, $1, $2) WHERE name = $3",
-                [[group], old_values -- values, feature]
-              )
-
-            _ ->
-              nil
-          end
-        end)
+      query!(
+        pid,
+        """
+        UPDATE #{table} SET rules = jsonb_set(rules, $1, array_to_json(
+          ARRAY(
+            SELECT UNNEST(ARRAY(SELECT jsonb_array_elements(COALESCE(rules#>$1, '[]'::jsonb))))
+            EXCEPT
+            SELECT UNNEST(ARRAY(SELECT jsonb_array_elements($2)))
+          )
+        )::jsonb)
+        WHERE name = $3
+        """,
+        [[group], values, feature]
+      )
 
       {:noreply, state}
     end

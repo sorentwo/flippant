@@ -95,10 +95,13 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
         Flippant.enable("search", "members", [1])
         Flippant.enable("search", "members", [])
         Flippant.enable("search", "members", [2, 3])
+        Flippant.enable("search", "members", [1])
 
-        assert Flippant.breakdown() == %{
-                 "search" => %{"members" => [1, 2, 3]}
-               }
+        breakdown = Flippant.breakdown()
+
+        assert breakdown["search"]
+        assert breakdown["search"]["members"]
+        assert Enum.sort(breakdown["search"]["members"]) == [1, 2, 3]
       end
 
       test "it operates atomically to avoid race conditions" do

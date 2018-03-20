@@ -202,7 +202,7 @@ if Code.ensure_loaded?(Redix) do
       old_values
       |> load()
       |> Kernel.++(new_values)
-      |> Enum.sort()
+      |> Enum.uniq()
       |> dump()
     end
 

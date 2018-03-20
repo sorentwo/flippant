@@ -150,7 +150,7 @@ defmodule Flippant.Adapter.Memory do
   end
 
   defp merge_rules(rule, rules) do
-    change_values(rule, rules, fn old, new -> new ++ old end)
+    change_values(rule, rules, fn old, new -> Enum.uniq(new ++ old) end)
   end
 
   defp get_features(table, :all) do
