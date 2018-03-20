@@ -66,66 +66,69 @@ if Code.ensure_loaded(Postgrex) do
     end
 
     def handle_cast({:add, feature}, %{pid: pid, table: table} = state) do
-      query!(pid, "INSERT INTO #{table} (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", [
-        feature
-      ])
+      _ =
+        query!(pid, "INSERT INTO #{table} (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", [
+          feature
+        ])
 
       {:noreply, state}
     end
 
     def handle_cast({:add, feature, {group, values}}, %{pid: pid, table: table} = state) do
-      query!(
-        pid,
-        """
-        INSERT INTO #{table} AS t (name, rules) VALUES ($1, $2)
-        ON CONFLICT (name) DO UPDATE
-        SET rules = jsonb_set(t.rules, $3, array_to_json(
-          ARRAY(
-            SELECT DISTINCT(UNNEST(ARRAY(
-              SELECT jsonb_array_elements(COALESCE(t.rules#>$3, '[]'::jsonb))
-            ) || $4))
-          )
-        )::jsonb)
-        """,
-        [feature, %{group => values}, [group], values]
-      )
+      _ =
+        query!(
+          pid,
+          """
+          INSERT INTO #{table} AS t (name, rules) VALUES ($1, $2)
+          ON CONFLICT (name) DO UPDATE
+          SET rules = jsonb_set(t.rules, $3, array_to_json(
+            ARRAY(
+              SELECT DISTINCT(UNNEST(ARRAY(
+                SELECT jsonb_array_elements(COALESCE(t.rules#>$3, '[]'::jsonb))
+              ) || $4))
+            )
+          )::jsonb)
+          """,
+          [feature, %{group => values}, [group], values]
+        )
 
       {:noreply, state}
     end
 
     def handle_cast(:clear, %{pid: pid, table: table} = state) do
-      query!(pid, "TRUNCATE #{table} RESTART IDENTITY", [])
+      _ = query!(pid, "TRUNCATE #{table} RESTART IDENTITY", [])
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature}, %{pid: pid, table: table} = state) do
-      query!(pid, "DELETE FROM #{table} WHERE name = $1", [feature])
+      _ = query!(pid, "DELETE FROM #{table} WHERE name = $1", [feature])
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature, group, []}, %{pid: pid, table: table} = state) do
-      query!(pid, "UPDATE #{table} SET rules = rules - $1 WHERE name = $2", [group, feature])
+      _ = query!(pid, "UPDATE #{table} SET rules = rules - $1 WHERE name = $2", [group, feature])
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature, group, values}, %{pid: pid, table: table} = state) do
-      query!(
-        pid,
-        """
-        UPDATE #{table} SET rules = jsonb_set(rules, $1, array_to_json(
-          ARRAY(
-            SELECT UNNEST(ARRAY(SELECT jsonb_array_elements(COALESCE(rules#>$1, '[]'::jsonb))))
-            EXCEPT
-            SELECT UNNEST(ARRAY(SELECT jsonb_array_elements($2)))
-          )
-        )::jsonb)
-        WHERE name = $3
-        """,
-        [[group], values, feature]
-      )
+      _ =
+        query!(
+          pid,
+          """
+          UPDATE #{table} SET rules = jsonb_set(rules, $1, array_to_json(
+            ARRAY(
+              SELECT UNNEST(ARRAY(SELECT jsonb_array_elements(COALESCE(rules#>$1, '[]'::jsonb))))
+              EXCEPT
+              SELECT UNNEST(ARRAY(SELECT jsonb_array_elements($2)))
+            )
+          )::jsonb)
+          WHERE name = $3
+          """,
+          [[group], values, feature]
+        )
 
       {:noreply, state}
     end
@@ -133,25 +136,26 @@ if Code.ensure_loaded(Postgrex) do
     def handle_cast({:rename, old_name, new_name}, %{pid: pid, table: table} = state) do
       {:ok, _} =
         transaction(pid, fn conn ->
-          query!(conn, "DELETE FROM #{table} WHERE name = $1", [new_name])
-          query!(conn, "UPDATE #{table} SET name = $1 WHERE name = $2", [new_name, old_name])
+          _ = query!(conn, "DELETE FROM #{table} WHERE name = $1", [new_name])
+          _ = query!(conn, "UPDATE #{table} SET name = $1 WHERE name = $2", [new_name, old_name])
         end)
 
       {:noreply, state}
     end
 
     def handle_cast(:setup, %{pid: pid, table: table} = state) do
-      query!(
-        pid,
-        """
-        CREATE TABLE IF NOT EXISTS #{table} (
-          name varchar(140) NOT NULL CHECK (name <> ''),
-          rules jsonb NOT NULL DEFAULT '{}'::jsonb,
-          CONSTRAINT unique_name UNIQUE(name)
+      _ =
+        query!(
+          pid,
+          """
+          CREATE TABLE IF NOT EXISTS #{table} (
+            name varchar(140) NOT NULL CHECK (name <> ''),
+            rules jsonb NOT NULL DEFAULT '{}'::jsonb,
+            CONSTRAINT unique_name UNIQUE(name)
+          )
+          """,
+          []
         )
-        """,
-        []
-      )
 
       {:noreply, state}
     end

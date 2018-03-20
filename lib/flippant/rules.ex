@@ -3,6 +3,9 @@ defmodule Flippant.Rules do
   The Rules module glues rules, actors, and groups are together.
   """
 
+  @type rules :: Enumerable.t()
+  @type actor :: term()
+
   alias Flippant.Registry
 
   @doc """
@@ -16,7 +19,7 @@ defmodule Flippant.Rules do
   Without a third argument of the groups to be checked it falls back to
   collecting the globally registered groups.
   """
-  @spec enabled_for_actor?(list, any, Map.t()) :: boolean
+  @spec enabled_for_actor?(rules(), actor(), map() | nil) :: boolean()
   def enabled_for_actor?(rules, actor, groups \\ nil) do
     groups = groups || Registry.registered()
 

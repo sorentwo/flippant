@@ -42,7 +42,7 @@ if Code.ensure_loaded?(Redix) do
     end
 
     def handle_cast({:add, feature}, %{conn: conn, set_key: set_key} = state) do
-      command!(conn, ["SADD", set_key, feature])
+      _ = command!(conn, ["SADD", set_key, feature])
 
       {:noreply, state}
     end
@@ -51,19 +51,19 @@ if Code.ensure_loaded?(Redix) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = merge_values(old_values, values)
 
-      pipeline!(conn, [["SADD", set_key, feature], ["HSET", feature, group, new_values]])
+      _ = pipeline!(conn, [["SADD", set_key, feature], ["HSET", feature, group, new_values]])
 
       {:noreply, state}
     end
 
     def handle_cast(:clear, %{conn: conn, set_key: set_key} = state) do
-      command!(conn, ["DEL", set_key] ++ fetch_features(state))
+      _ = command!(conn, ["DEL", set_key] ++ fetch_features(state))
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature}, %{conn: conn, set_key: set_key} = state) do
-      pipeline!(conn, [["SREM", set_key, feature], ["DEL", feature]])
+      _ = pipeline!(conn, [["SREM", set_key, feature], ["DEL", feature]])
 
       {:noreply, state}
     end
@@ -81,18 +81,19 @@ if Code.ensure_loaded?(Redix) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = diff_values(old_values, values)
 
-      command!(conn, ["HSET", feature, group, new_values])
+      _ = command!(conn, ["HSET", feature, group, new_values])
 
       {:noreply, state}
     end
 
     def handle_cast({:rename, old_name, new_name}, %{conn: conn, set_key: set_key} = state) do
-      pipeline!(conn, [
-        ["WATCH", old_name, new_name],
-        ["SREM", set_key, old_name],
-        ["SADD", set_key, new_name],
-        ["RENAME", old_name, new_name]
-      ])
+      _ =
+        pipeline!(conn, [
+          ["WATCH", old_name, new_name],
+          ["SREM", set_key, old_name],
+          ["SADD", set_key, new_name],
+          ["RENAME", old_name, new_name]
+        ])
 
       {:noreply, state}
     end

@@ -15,7 +15,11 @@ defmodule Flippant.Mixfile do
       package: package(),
       name: "Flippant",
       deps: deps(),
-      docs: docs()
+      docs: docs(),
+      dialyzer: [
+        flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
+        plt_add_apps: [:decimal, :jason, :postgrex, :redix]
+      ]
     ]
   end
 
@@ -47,9 +51,10 @@ defmodule Flippant.Mixfile do
       {:jason, "~> 1.0", optional: true},
       {:postgrex, "~> 0.13", optional: true},
       {:redix, "~> 0.7", optional: true},
-      {:ex_doc, ">= 0.0.0", only: :dev},
-      {:inch_ex, ">= 0.0.0", only: :dev},
-      {:excoveralls, "~> 0.7", only: [:dev, :test]}
+      {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
+      {:ex_doc, ">= 0.0.0", only: [:dev], runtime: false},
+      {:inch_ex, ">= 0.0.0", only: [:dev], runtime: false},
+      {:excoveralls, "~> 0.7", only: [:dev, :test], runtime: false}
     ]
   end
 

@@ -287,8 +287,8 @@ defmodule Flippant do
       Flippant.clear(:groups)
       #=> :ok
   """
-  @spec clear(:features | :groups) :: :ok
-  def clear(selection \\ nil)
+  @spec clear(:all | :features | :groups) :: :ok
+  def clear(selection \\ :all)
 
   def clear(:features) do
     GenServer.cast(adapter(), :clear)
@@ -298,7 +298,7 @@ defmodule Flippant do
     Registry.clear()
   end
 
-  def clear(_) do
+  def clear(:all) do
     :ok = clear(:groups)
     :ok = clear(:features)
 
