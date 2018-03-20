@@ -151,9 +151,11 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
 
         Enum.each(tasks, &Task.await/1)
 
-        assert Flippant.breakdown() == %{
-                 "search" => %{"members" => [2, 4]}
-               }
+        breakdown = Flippant.breakdown()
+
+        assert breakdown["search"]
+        assert breakdown["search"]["members"]
+        assert Enum.sort(breakdown["search"]["members"]) == [2, 4]
       end
     end
 
@@ -271,7 +273,7 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
     end
 
     describe "breakdown/1" do
-      test "it works without any features" do
+      test "it is empty without any features" do
         assert Flippant.breakdown(%{id: 1}) == %{}
       end
 
@@ -296,6 +298,34 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
                  "invite" => false,
                  "search" => true
                }
+      end
+    end
+
+    describe "dump/1 and load/1" do
+      @dumpfile "flippant.dump"
+
+      test "feature dumps may be restored using load" do
+        Flippant.enable("search", "awesome")
+        Flippant.enable("search", "heinous", [1, 2])
+        Flippant.enable("delete", "radical")
+        Flippant.enable("invite", "heinous", [5, 6])
+
+        assert :ok = Flippant.dump(@dumpfile)
+        assert :ok = Flippant.clear()
+        assert %{} = Flippant.breakdown()
+        assert :ok = Flippant.load(@dumpfile)
+
+        assert Flippant.breakdown() == %{
+                 "search" => %{"awesome" => [], "heinous" => [1, 2]},
+                 "delete" => %{"radical" => []},
+                 "invite" => %{"heinous" => [5, 6]}
+               }
+      after
+        File.rm(@dumpfile)
+      end
+
+      test "attempting to load from a missing dump fails gracefully" do
+        assert {:error, :enoent} = Flippant.load(@dumpfile)
       end
     end
   end

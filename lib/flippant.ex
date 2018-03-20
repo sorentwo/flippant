@@ -196,10 +196,30 @@ defmodule Flippant do
       config :flippant, serializer: MyApp.Serializer
 
   Not all adapters have customizable serialization. For example, the `Postgres`
-  adapter uses the `jsonb` type and therefor requires a `JSON` serializer.
+  adapter uses the `jsonb` type and therefore requires a `JSON` serializer.
+
+  ### Backups and Portability
+
+  The `dump/1` and `load/1` functions are handy for storing feature backups on
+  disk. The backup may be used to transfer features between database servers,
+  or even between adapters. For example, if you've decided to move away from
+  using Redis and would like to switch to Postgres instead, you could transfer
+  the data with a few commands:
+
+      # Dump from the Redis instance
+      Flippant.dump("flippant.dump")
+
+      # Restart the application
+      Application.stop(:flippant)
+      Application.put_env(:flippant, :adapter, Flippant.Adapter.Postgres)
+      Application.ensure_started(:flippant)
+
+      # Load to the postgres instance
+      Flippant.load("flippant.dump")
   """
 
   alias Flippant.Registry
+  alias Flippant.Serializer
 
   # Adapter
 
@@ -334,6 +354,33 @@ defmodule Flippant do
   end
 
   @doc """
+  Dump the full feature breakdown to a file.
+
+  The `dump/1` command aggregates all features using `breakdown/0`, encodes
+  them using the configured serializer, and writes the result to a file on
+  disk.
+
+  Dumps are portable between adapters, so a dump may be subsequently used to
+  load the data into another adapter.
+
+  ## Examples
+
+  Dump a daily backup:
+
+      Flippant.dump((Date.utc_today() |> Date.to_string()) <> ".dump")
+      #=> :ok
+  """
+  @spec dump(binary()) :: :ok | {:error, File.posix()}
+  def dump(path) when is_binary(path) do
+    dumped =
+      adapter()
+      |> GenServer.call({:breakdown, :all})
+      |> Serializer.dump()
+
+    File.write(path, dumped)
+  end
+
+  @doc """
   Enable a feature for a particular group.
 
   Features can be enabled for a group along with a set of values. The values
@@ -422,6 +469,33 @@ defmodule Flippant do
   @spec features(:all | binary) :: list(binary)
   def features(group \\ :all) do
     GenServer.call(adapter(), {:features, group})
+  end
+
+  @doc """
+  Restore all features from a dump file.
+
+  Dumped features may be restored in full using the `load/1` function. During
+  the load process the file will be decoded using the currently configured
+  serializer, so it is crucial that the same serializer is used for both
+  `dump/1` and `load/1`.
+
+  Loading happens atomically, but it does _not_ clear out any existing
+  features. To have a clean restore you'll need to run `clear/1` first.
+
+  ## Examples
+
+  Restore a dump into a clean environment:
+
+      Flippant.clear(:features) #=> :ok
+      Flippant.load("backup.dump") #=> :ok
+  """
+  @spec load(binary()) :: :ok | {:error, File.posix() | binary()}
+  def load(path) when is_binary(path) do
+    with {:ok, data} <- File.read(path) do
+      loaded = Serializer.load(data)
+
+      GenServer.cast(adapter(), {:restore, loaded})
+    end
   end
 
   @doc """

@@ -13,10 +13,9 @@ if Code.ensure_loaded(Postgrex) do
     * `rules` - A `jsonb` column where rules will be stored. The use of jsonb and
       jsonb specific operators means the Postgres version must be 9.5 or greater.
 
-
-    In the likely chance that you're using managing a database using Ecto you
-    can create a migration to add the `flippant_features` table with the
-    following statement (or an equivalent):
+    In the likely chance that you're managing a database using Ecto you can
+    create a migration to add the `flippant_features` table with the following
+    statement (or an equivalent):
 
         CREATE TABLE IF NOT EXISTS flippant_features (
           name varchar(140) NOT NULL CHECK (name <> ''),
@@ -66,69 +65,66 @@ if Code.ensure_loaded(Postgrex) do
     end
 
     def handle_cast({:add, feature}, %{pid: pid, table: table} = state) do
-      _ =
-        query!(pid, "INSERT INTO #{table} (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", [
-          feature
-        ])
+      query!(pid, "INSERT INTO #{table} (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", [
+        feature
+      ])
 
       {:noreply, state}
     end
 
     def handle_cast({:add, feature, {group, values}}, %{pid: pid, table: table} = state) do
-      _ =
-        query!(
-          pid,
-          """
-          INSERT INTO #{table} AS t (name, rules) VALUES ($1, $2)
-          ON CONFLICT (name) DO UPDATE
-          SET rules = jsonb_set(t.rules, $3, array_to_json(
-            ARRAY(
-              SELECT DISTINCT(UNNEST(ARRAY(
-                SELECT jsonb_array_elements(COALESCE(t.rules#>$3, '[]'::jsonb))
-              ) || $4))
-            )
-          )::jsonb)
-          """,
-          [feature, %{group => values}, [group], values]
-        )
+      query!(
+        pid,
+        """
+        INSERT INTO #{table} AS t (name, rules) VALUES ($1, $2)
+        ON CONFLICT (name) DO UPDATE
+        SET rules = jsonb_set(t.rules, $3, array_to_json(
+          ARRAY(
+            SELECT DISTINCT(UNNEST(ARRAY(
+              SELECT jsonb_array_elements(COALESCE(t.rules#>$3, '[]'::jsonb))
+            ) || $4))
+          )
+        )::jsonb)
+        """,
+        [feature, %{group => values}, [group], values]
+      )
 
       {:noreply, state}
     end
 
     def handle_cast(:clear, %{pid: pid, table: table} = state) do
-      _ = query!(pid, "TRUNCATE #{table} RESTART IDENTITY", [])
+      query!(pid, "TRUNCATE #{table} RESTART IDENTITY", [])
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature}, %{pid: pid, table: table} = state) do
-      _ = query!(pid, "DELETE FROM #{table} WHERE name = $1", [feature])
+      query!(pid, "DELETE FROM #{table} WHERE name = $1", [feature])
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature, group, []}, %{pid: pid, table: table} = state) do
-      _ = query!(pid, "UPDATE #{table} SET rules = rules - $1 WHERE name = $2", [group, feature])
+      query!(pid, "UPDATE #{table} SET rules = rules - $1 WHERE name = $2", [group, feature])
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature, group, values}, %{pid: pid, table: table} = state) do
-      _ =
-        query!(
-          pid,
-          """
-          UPDATE #{table} SET rules = jsonb_set(rules, $1, array_to_json(
-            ARRAY(
-              SELECT UNNEST(ARRAY(SELECT jsonb_array_elements(COALESCE(rules#>$1, '[]'::jsonb))))
-              EXCEPT
-              SELECT UNNEST(ARRAY(SELECT jsonb_array_elements($2)))
-            )
-          )::jsonb)
-          WHERE name = $3
-          """,
-          [[group], values, feature]
-        )
+      query!(
+        pid,
+        """
+        UPDATE #{table} SET rules = jsonb_set(rules, $1, array_to_json(
+          ARRAY(
+            SELECT UNNEST(ARRAY(SELECT jsonb_array_elements(COALESCE(rules#>$1, '[]'::jsonb))))
+            EXCEPT
+            SELECT UNNEST(ARRAY(SELECT jsonb_array_elements($2)))
+          )
+        )::jsonb)
+        WHERE name = $3
+        """,
+        [[group], values, feature]
+      )
 
       {:noreply, state}
     end
@@ -136,26 +132,39 @@ if Code.ensure_loaded(Postgrex) do
     def handle_cast({:rename, old_name, new_name}, %{pid: pid, table: table} = state) do
       {:ok, _} =
         transaction(pid, fn conn ->
-          _ = query!(conn, "DELETE FROM #{table} WHERE name = $1", [new_name])
-          _ = query!(conn, "UPDATE #{table} SET name = $1 WHERE name = $2", [new_name, old_name])
+          query!(conn, "DELETE FROM #{table} WHERE name = $1", [new_name])
+          query!(conn, "UPDATE #{table} SET name = $1 WHERE name = $2", [new_name, old_name])
+        end)
+
+      {:noreply, state}
+    end
+
+    def handle_cast({:restore, loaded}, %{pid: pid, table: table} = state) do
+      {:ok, _} =
+        transaction(pid, fn conn ->
+          for {feature, rules} <- loaded do
+            query!(conn, "INSERT INTO #{table} AS t (name, rules) VALUES ($1, $2)", [
+              feature,
+              rules
+            ])
+          end
         end)
 
       {:noreply, state}
     end
 
     def handle_cast(:setup, %{pid: pid, table: table} = state) do
-      _ =
-        query!(
-          pid,
-          """
-          CREATE TABLE IF NOT EXISTS #{table} (
-            name varchar(140) NOT NULL CHECK (name <> ''),
-            rules jsonb NOT NULL DEFAULT '{}'::jsonb,
-            CONSTRAINT unique_name UNIQUE(name)
-          )
-          """,
-          []
+      query!(
+        pid,
+        """
+        CREATE TABLE IF NOT EXISTS #{table} (
+          name varchar(140) NOT NULL CHECK (name <> ''),
+          rules jsonb NOT NULL DEFAULT '{}'::jsonb,
+          CONSTRAINT unique_name UNIQUE(name)
         )
+        """,
+        []
+      )
 
       {:noreply, state}
     end

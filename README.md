@@ -21,7 +21,7 @@
 
   ```elixir
   def deps do
-    [{:redix, "~> 0.13"}]
+    [{:redix, "~> 0.7"}]
   end
   ```
 

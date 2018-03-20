@@ -81,6 +81,14 @@ defmodule Flippant.Adapter.Memory do
     {:noreply, table}
   end
 
+  def handle_cast({:restore, loaded}, table) do
+    for {feature, rules} <- loaded do
+      true = :ets.insert(table, {feature, rules})
+    end
+
+    {:noreply, table}
+  end
+
   def handle_cast(:setup, table) do
     {:noreply, table}
   end

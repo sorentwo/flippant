@@ -42,7 +42,7 @@ if Code.ensure_loaded?(Redix) do
     end
 
     def handle_cast({:add, feature}, %{conn: conn, set_key: set_key} = state) do
-      _ = command!(conn, ["SADD", set_key, feature])
+      command!(conn, ["SADD", set_key, feature])
 
       {:noreply, state}
     end
@@ -51,19 +51,19 @@ if Code.ensure_loaded?(Redix) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = merge_values(old_values, values)
 
-      _ = pipeline!(conn, [["SADD", set_key, feature], ["HSET", feature, group, new_values]])
+      pipeline!(conn, [["SADD", set_key, feature], ["HSET", feature, group, new_values]])
 
       {:noreply, state}
     end
 
     def handle_cast(:clear, %{conn: conn, set_key: set_key} = state) do
-      _ = command!(conn, ["DEL", set_key] ++ fetch_features(state))
+      command!(conn, ["DEL", set_key] ++ fetch_features(state))
 
       {:noreply, state}
     end
 
     def handle_cast({:remove, feature}, %{conn: conn, set_key: set_key} = state) do
-      _ = pipeline!(conn, [["SREM", set_key, feature], ["DEL", feature]])
+      pipeline!(conn, [["SREM", set_key, feature], ["DEL", feature]])
 
       {:noreply, state}
     end
@@ -81,19 +81,31 @@ if Code.ensure_loaded?(Redix) do
       old_values = command!(conn, ["HGET", feature, group])
       new_values = diff_values(old_values, values)
 
-      _ = command!(conn, ["HSET", feature, group, new_values])
+      command!(conn, ["HSET", feature, group, new_values])
 
       {:noreply, state}
     end
 
     def handle_cast({:rename, old_name, new_name}, %{conn: conn, set_key: set_key} = state) do
-      _ =
-        pipeline!(conn, [
-          ["WATCH", old_name, new_name],
-          ["SREM", set_key, old_name],
-          ["SADD", set_key, new_name],
-          ["RENAME", old_name, new_name]
-        ])
+      pipeline!(conn, [
+        ["WATCH", old_name, new_name],
+        ["SREM", set_key, old_name],
+        ["SADD", set_key, new_name],
+        ["RENAME", old_name, new_name]
+      ])
+
+      {:noreply, state}
+    end
+
+    def handle_cast({:restore, loaded}, %{conn: conn, set_key: set_key} = state) do
+      commands = Enum.flat_map(loaded, fn {feature, rules} ->
+        base = ["SADD", set_key, feature]
+        adds = Enum.map(rules, &["HSET", feature, elem(&1, 0), dump(elem(&1, 1))])
+
+        [base | adds]
+      end)
+
+      pipeline!(conn, commands)
 
       {:noreply, state}
     end
@@ -118,25 +130,25 @@ if Code.ensure_loaded?(Redix) do
     end
 
     def handle_call({:enabled?, feature, actor}, _from, %{conn: conn} = state) do
-      enabled =
+      enabled? =
         conn
         |> command!(["HGETALL", feature])
         |> decode_rules()
         |> enabled_for_actor?(actor)
 
-      {:reply, enabled, state}
+      {:reply, enabled?, state}
     end
 
     def handle_call({:exists?, feature, :any}, _from, %{conn: conn, set_key: set_key} = state) do
-      enabled = command!(conn, ["SISMEMBER", set_key, feature]) == 1
+      exists? = command!(conn, ["SISMEMBER", set_key, feature]) == 1
 
-      {:reply, enabled, state}
+      {:reply, exists?, state}
     end
 
     def handle_call({:exists?, feature, group}, _from, %{conn: conn} = state) do
-      enabled = command!(conn, ["HEXISTS", feature, group]) == 1
+      exists? = command!(conn, ["HEXISTS", feature, group]) == 1
 
-      {:reply, enabled, state}
+      {:reply, exists?, state}
     end
 
     def handle_call({:features, :all}, _from, state) do

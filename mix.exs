@@ -17,7 +17,7 @@ defmodule Flippant.Mixfile do
       deps: deps(),
       docs: docs(),
       dialyzer: [
-        flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
+        flags: [:error_handling, :race_conditions, :underspecs],
         plt_add_apps: [:decimal, :jason, :postgrex, :redix]
       ]
     ]
