@@ -1,3 +1,22 @@
+## v1.0.0 2018-03-20
+
+### Enhancements
+
+* [Flippant] - Add `dump/1` and `load/1` functions for backups and portability.
+
+### Changes
+
+* [Flippant.Adapter.Postgres] - Replace Poison with Jason for JSON encoding.
+* [Flippant.Serializer] - Rename `dump`/`load` to `encode!`/`decode!`. This is
+  partially to indicate that they will not return success tuples, but moreover
+  to prevent confusion with the new export functions.
+
+### Bug Fixes
+
+* [Flippant] - Modify `enable/3` and `disable/3` to prevent duplicate values and
+  operate atomically without a transaction.
+* [Flippant] - Configure dialyzer and correct failing specifications.
+
 ## v0.4.2 2017-10-20
 
 * [Flippant] - Documentation fixes to correct hexdocs loading.
