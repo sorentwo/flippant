@@ -2,7 +2,7 @@ defmodule Flippant.RegistryTest do
   use ExUnit.Case
 
   setup do
-    on_exit(fn -> Flippant.clear(:registered) end)
+    on_exit(fn -> Flippant.clear(:groups) end)
 
     :ok
   end

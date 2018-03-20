@@ -7,7 +7,7 @@ if Code.ensure_loaded?(Redix) do
     use GenServer
 
     import Flippant.Rules, only: [enabled_for_actor?: 2]
-    import Flippant.Serializer, only: [dump: 1, load: 1]
+    import Flippant.Serializer, only: [encode!: 1, decode!: 1]
     import Redix, only: [command!: 2]
 
     @defaults [redis_opts: [], set_key: "flippant-features"]
@@ -100,7 +100,7 @@ if Code.ensure_loaded?(Redix) do
     def handle_cast({:restore, loaded}, %{conn: conn, set_key: set_key} = state) do
       commands = Enum.flat_map(loaded, fn {feature, rules} ->
         base = ["SADD", set_key, feature]
-        adds = Enum.map(rules, &["HSET", feature, elem(&1, 0), dump(elem(&1, 1))])
+        adds = Enum.map(rules, &["HSET", feature, elem(&1, 0), encode!(elem(&1, 1))])
 
         [base | adds]
       end)
@@ -182,7 +182,7 @@ if Code.ensure_loaded?(Redix) do
     defp decode_rules(rules) do
       rules
       |> Enum.chunk(2)
-      |> Enum.map(fn [key, value] -> {key, load(value)} end)
+      |> Enum.map(fn [key, value] -> {key, decode!(value)} end)
       |> Enum.into(%{})
     end
 
@@ -193,18 +193,18 @@ if Code.ensure_loaded?(Redix) do
     end
 
     defp diff_values(nil, new_values) do
-      dump(new_values)
+      encode!(new_values)
     end
 
     defp diff_values(old_values, new_values) do
       old_values
-      |> load()
+      |> decode!()
       |> Kernel.--(new_values)
-      |> dump()
+      |> encode!()
     end
 
     defp merge_values(nil, new_values) do
-      dump(new_values)
+      encode!(new_values)
     end
 
     defp merge_values(old_values, []) do
@@ -213,10 +213,10 @@ if Code.ensure_loaded?(Redix) do
 
     defp merge_values(old_values, new_values) do
       old_values
-      |> load()
+      |> decode!()
       |> Kernel.++(new_values)
       |> Enum.uniq()
-      |> dump()
+      |> encode!()
     end
 
     defp pipeline!(_conn, []) do

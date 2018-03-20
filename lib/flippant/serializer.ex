@@ -7,34 +7,31 @@ defmodule Flippant.Serializer do
   conversion. This isn't especially portable, or readable, so it can be
   overridden within your app's configuration.
 
-  ## Example
+  ## Examples
 
-      iex> Application.put_env(:flippant, serializer: MySerializer)
-      :ok
+      Application.put_env(:flippant, serializer: MySerializer)
   """
 
-  @callback dump(value :: any) :: binary
-  @callback load(value :: binary) :: any
-
-  alias Flippant.Serializer.Term
+  @callback encode!(value :: any()) :: binary()
+  @callback decode!(value :: binary()) :: any()
 
   @doc """
   Delegates dumping a value to the configured serializer.
   """
-  @spec dump(any) :: binary
-  def dump(value), do: serializer().dump(value)
+  @spec encode!(any()) :: binary() | no_return()
+  def encode!(value), do: serializer().encode!(value)
 
   @doc """
   Delegates loading a value with the configured serializer.
   """
-  @spec load(binary) :: any
-  def load(value), do: serializer().load(value)
+  @spec decode!(binary()) :: any() | no_return()
+  def decode!(value), do: serializer().decode!(value)
 
   @doc """
   Get the currently configured serializer module. Defaults to `Term` storage.
   """
-  @spec serializer() :: module
+  @spec serializer() :: module()
   def serializer do
-    Application.get_env(:flippant, :serializer, Term)
+    Application.fetch_env!(:flippant, :serializer)
   end
 end

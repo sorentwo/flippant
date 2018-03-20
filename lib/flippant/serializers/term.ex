@@ -9,11 +9,11 @@ defmodule Flippant.Serializer.Term do
   Serialize data using `term_to_binary/1`.
   """
   @impl Flippant.Serializer
-  def dump(value), do: :erlang.term_to_binary(value)
+  def encode!(value), do: :erlang.term_to_binary(value)
 
   @doc """
   Deserialize data using `binary_to_term/1`.
   """
   @impl Flippant.Serializer
-  def load(value), do: :erlang.binary_to_term(value)
+  def decode!(value), do: :erlang.binary_to_term(value)
 end

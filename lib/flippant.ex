@@ -187,8 +187,8 @@ defmodule Flippant do
       defmodule MyApp.Serializer do
         @behaviour Flippant.Serializer
 
-        def dump(value), do: Msgpax.pack!(value)
-        def load(value), do: Msgpax.unpack!(value)
+        def encode!(value), do: Msgpax.pack!(value)
+        def decode!(value), do: Msgpax.unpack!(value)
       end
 
   Then, within `config.exs` set the serializer:
@@ -231,7 +231,7 @@ defmodule Flippant do
   @spec adapter() :: pid | nil
   def adapter do
     :flippant
-    |> Application.get_env(:adapter)
+    |> Application.fetch_env!(:adapter)
     |> Process.whereis()
   end
 
@@ -375,7 +375,7 @@ defmodule Flippant do
     dumped =
       adapter()
       |> GenServer.call({:breakdown, :all})
-      |> Serializer.dump()
+      |> Serializer.encode!()
 
     File.write(path, dumped)
   end
@@ -443,8 +443,8 @@ defmodule Flippant do
       Flippant.exists?("search")
       #=> true
   """
-  @spec exists?(binary, binary | :any) :: boolean
-  def exists?(feature, group \\ :any) do
+  @spec exists?(binary(), binary() | :any) :: boolean()
+  def exists?(feature, group \\ :any) when is_binary(feature) do
     GenServer.call(adapter(), {:exists?, normalize(feature), group})
   end
 
@@ -466,7 +466,7 @@ defmodule Flippant do
       Flippant.features("awesome")
       #=> ["search"]
   """
-  @spec features(:all | binary) :: list(binary)
+  @spec features(:all | binary()) :: list(binary())
   def features(group \\ :all) do
     GenServer.call(adapter(), {:features, group})
   end
@@ -492,7 +492,7 @@ defmodule Flippant do
   @spec load(binary()) :: :ok | {:error, File.posix() | binary()}
   def load(path) when is_binary(path) do
     with {:ok, data} <- File.read(path) do
-      loaded = Serializer.load(data)
+      loaded = Serializer.decode!(data)
 
       GenServer.cast(adapter(), {:restore, loaded})
     end
@@ -578,7 +578,7 @@ defmodule Flippant do
       Flippant.registered()
       #=> %{"staff" => #Function<20.50752066/0}
   """
-  @spec registered() :: map
+  @spec registered() :: map()
   def registered do
     Registry.registered()
   end
