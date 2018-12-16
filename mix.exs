@@ -49,12 +49,14 @@ defmodule Flippant.Mixfile do
   defp deps do
     [
       {:jason, "~> 1.0", optional: true},
-      {:postgrex, "~> 0.13", optional: true},
-      {:redix, "~> 0.7", optional: true},
+      {:postgrex, "~> 0.14", optional: true},
+      {:redix, "~> 0.9", optional: true},
+      {:benchee, "~> 0.13", only: [:dev], runtime: false},
+      {:credo, "~> 1.0", only: [:dev], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
-      {:ex_doc, ">= 0.0.0", only: [:dev], runtime: false},
-      {:inch_ex, ">= 0.0.0", only: [:dev], runtime: false},
-      {:excoveralls, "~> 0.7", only: [:dev, :test], runtime: false}
+      {:ex_doc, "~> 0.19", only: [:dev], runtime: false},
+      {:inch_ex, "~> 0.5", only: [:dev], runtime: false},
+      {:excoveralls, "~> 0.10", only: [:dev, :test], runtime: false}
     ]
   end
 

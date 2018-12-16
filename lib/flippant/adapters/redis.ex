@@ -98,12 +98,13 @@ if Code.ensure_loaded?(Redix) do
     end
 
     def handle_cast({:restore, loaded}, %{conn: conn, set_key: set_key} = state) do
-      commands = Enum.flat_map(loaded, fn {feature, rules} ->
-        base = ["SADD", set_key, feature]
-        adds = Enum.map(rules, &["HSET", feature, elem(&1, 0), encode!(elem(&1, 1))])
+      commands =
+        Enum.flat_map(loaded, fn {feature, rules} ->
+          base = ["SADD", set_key, feature]
+          adds = Enum.map(rules, &["HSET", feature, elem(&1, 0), encode!(elem(&1, 1))])
 
-        [base | adds]
-      end)
+          [base | adds]
+        end)
 
       pipeline!(conn, commands)
 
