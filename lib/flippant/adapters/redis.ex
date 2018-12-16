@@ -182,9 +182,8 @@ if Code.ensure_loaded?(Redix) do
 
     defp decode_rules(rules) do
       rules
-      |> Enum.chunk(2)
-      |> Enum.map(fn [key, value] -> {key, decode!(value)} end)
-      |> Enum.into(%{})
+      |> Enum.chunk_every(2)
+      |> Enum.into(%{}, fn [key, val] -> {key, decode!(val)} end)
     end
 
     defp fetch_features(%{conn: conn, set_key: set_key}) do

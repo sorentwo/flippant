@@ -264,11 +264,11 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
         Flippant.enable("delete", "radical")
         Flippant.enable("invite", "heinous", [5, 6])
 
-        assert Flippant.breakdown() == %{
-                 "search" => %{"awesome" => [], "heinous" => [1, 2]},
-                 "delete" => %{"radical" => []},
-                 "invite" => %{"heinous" => [5, 6]}
-               }
+        %{"search" => search, "delete" => delete, "invite" => invite} = Flippant.breakdown()
+
+        assert %{"awesome" => [], "heinous" => [_, _]} = search
+        assert %{"radical" => []} = delete
+        assert %{"heinous" => [_, _]} = invite
       end
     end
 
@@ -290,8 +290,6 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
         Flippant.enable("invite", "heinous")
 
         breakdown = Flippant.breakdown(actor)
-
-        assert Map.keys(breakdown) == ~w(delete invite search)
 
         assert breakdown == %{
                  "delete" => true,
@@ -315,11 +313,11 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
         assert %{} = Flippant.breakdown()
         assert :ok = Flippant.load(@dumpfile)
 
-        assert Flippant.breakdown() == %{
-                 "search" => %{"awesome" => [], "heinous" => [1, 2]},
-                 "delete" => %{"radical" => []},
-                 "invite" => %{"heinous" => [5, 6]}
-               }
+        %{"search" => search, "delete" => delete, "invite" => invite} = Flippant.breakdown()
+
+        assert %{"awesome" => [], "heinous" => [_, _]} = search
+        assert %{"radical" => []} = delete
+        assert %{"heinous" => [5, 6]} = invite
       after
         File.rm(@dumpfile)
       end

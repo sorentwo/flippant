@@ -58,7 +58,7 @@ defmodule Flippant.Registry do
 
   @doc false
   @spec registered() :: map
-  def registered() do
+  def registered do
     folder = fn {group, fun}, acc -> Map.put(acc, group, fun) end
 
     :ets.foldl(folder, %{}, __MODULE__)

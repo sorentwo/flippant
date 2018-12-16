@@ -18,7 +18,7 @@ defmodule Flippant.Mixfile do
       docs: docs(),
       dialyzer: [
         flags: [:error_handling, :race_conditions, :underspecs],
-        plt_add_apps: [:decimal, :jason, :postgrex, :redix]
+        plt_add_apps: [:db_connection, :decimal, :jason, :postgrex, :redix]
       ]
     ]
   end
