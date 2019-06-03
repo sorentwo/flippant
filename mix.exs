@@ -51,7 +51,7 @@ defmodule Flippant.Mixfile do
       {:jason, "~> 1.0", optional: true},
       {:postgrex, "~> 0.14", optional: true},
       {:redix, "~> 0.9", optional: true},
-      {:benchee, "~> 0.13", only: [:dev], runtime: false},
+      {:benchee, "~> 1.0", only: [:dev], runtime: false},
       {:credo, "~> 1.0", only: [:dev], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: [:dev], runtime: false},
