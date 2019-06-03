@@ -7,7 +7,7 @@ defmodule Flippant.Mixfile do
     [
       app: :flippant,
       version: @version,
-      elixir: "~> 1.4",
+      elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
@@ -50,13 +50,13 @@ defmodule Flippant.Mixfile do
     [
       {:jason, "~> 1.0", optional: true},
       {:postgrex, "~> 0.14", optional: true},
-      {:redix, "~> 0.9", optional: true},
-      {:benchee, "~> 0.13", only: [:dev], runtime: false},
+      {:redix, "~> 0.10", optional: true},
+      {:benchee, "~> 1.0", only: [:dev], runtime: false},
       {:credo, "~> 1.0", only: [:dev], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: [:dev], runtime: false},
       {:inch_ex, "~> 0.5", only: [:dev], runtime: false},
-      {:excoveralls, "~> 0.10", only: [:dev, :test], runtime: false}
+      {:excoveralls, "~> 0.11", only: [:dev, :test], runtime: false}
     ]
   end
 
