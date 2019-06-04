@@ -55,7 +55,7 @@ defmodule Flippant.Mixfile do
       {:credo, "~> 1.0", only: [:dev], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: [:dev], runtime: false},
-      {:inch_ex, "~> 0.5", only: [:dev], runtime: false},
+      {:inch_ex, "~> 2.0", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.11", only: [:dev, :test], runtime: false}
     ]
   end
