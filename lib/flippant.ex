@@ -171,33 +171,6 @@ defmodule Flippant do
         def staff?(%User{staff?: staff?}, _), do: staff?
       end
 
-  ### Customizing Serialization
-
-  Storing values along with rules is an important part of scoping features.
-  Values can be any type of data structure, including integers, binaries, lists
-  or maps. This adds a great deal of additional power to group evaluation, but
-  it means that the values must be serialized in a high fidelity way.
-
-  By default, values are stored using Erlang's binary term storage. This works
-  perfectly fine, but isn't especially readable and isn't compatible with other
-  languages. If you'd prefer to use `JSON` or `MessagePack` instead you can
-  provide a custom serializer and configure Flippant to use that instead. For
-  example, to use MessagePack via the `Msgpax` libary:
-
-      defmodule MyApp.Serializer do
-        @behaviour Flippant.Serializer
-
-        def encode!(value), do: Msgpax.pack!(value)
-        def decode!(value), do: Msgpax.unpack!(value)
-      end
-
-  Then, within `config.exs` set the serializer:
-
-      config :flippant, serializer: MyApp.Serializer
-
-  Not all adapters have customizable serialization. For example, the `Postgres`
-  adapter uses the `jsonb` type and therefore requires a `JSON` serializer.
-
   ### Backups and Portability
 
   The `dump/1` and `load/1` functions are handy for storing feature backups on
@@ -219,7 +192,6 @@ defmodule Flippant do
   """
 
   alias Flippant.Registry
-  alias Flippant.Serializer
 
   # Adapter
 
@@ -357,8 +329,7 @@ defmodule Flippant do
   Dump the full feature breakdown to a file.
 
   The `dump/1` command aggregates all features using `breakdown/0`, encodes
-  them using the configured serializer, and writes the result to a file on
-  disk.
+  them as json, and writes the result to a file on disk.
 
   Dumps are portable between adapters, so a dump may be subsequently used to
   load the data into another adapter.
@@ -375,7 +346,7 @@ defmodule Flippant do
     dumped =
       adapter()
       |> GenServer.call({:breakdown, :all})
-      |> Serializer.encode!()
+      |> Jason.encode!()
 
     File.write(path, dumped)
   end
@@ -475,9 +446,7 @@ defmodule Flippant do
   Restore all features from a dump file.
 
   Dumped features may be restored in full using the `load/1` function. During
-  the load process the file will be decoded using the currently configured
-  serializer, so it is crucial that the same serializer is used for both
-  `dump/1` and `load/1`.
+  the load process the file will be decoded as json.
 
   Loading happens atomically, but it does _not_ clear out any existing
   features. To have a clean restore you'll need to run `clear/1` first.
@@ -492,7 +461,7 @@ defmodule Flippant do
   @spec load(binary()) :: :ok | {:error, File.posix() | binary()}
   def load(path) when is_binary(path) do
     with {:ok, data} <- File.read(path) do
-      loaded = Serializer.decode!(data)
+      loaded = Jason.decode!(data)
 
       GenServer.cast(adapter(), {:restore, loaded})
     end

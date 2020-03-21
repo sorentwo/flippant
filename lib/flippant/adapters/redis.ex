@@ -7,7 +7,6 @@ if Code.ensure_loaded?(Redix) do
     use GenServer
 
     import Flippant.Rules, only: [enabled_for_actor?: 2]
-    import Flippant.Serializer, only: [encode!: 1, decode!: 1]
     import Redix, only: [command!: 2]
 
     @defaults [redis_opts: [], set_key: "flippant-features"]
@@ -101,7 +100,7 @@ if Code.ensure_loaded?(Redix) do
       commands =
         Enum.flat_map(loaded, fn {feature, rules} ->
           base = ["SADD", set_key, feature]
-          adds = Enum.map(rules, &["HSET", feature, elem(&1, 0), encode!(elem(&1, 1))])
+          adds = Enum.map(rules, &["HSET", feature, elem(&1, 0), Jason.encode!(elem(&1, 1))])
 
           [base | adds]
         end)
@@ -183,7 +182,7 @@ if Code.ensure_loaded?(Redix) do
     defp decode_rules(rules) do
       rules
       |> Enum.chunk_every(2)
-      |> Enum.into(%{}, fn [key, val] -> {key, decode!(val)} end)
+      |> Enum.into(%{}, fn [key, val] -> {key, Jason.decode!(val)} end)
     end
 
     defp fetch_features(%{conn: conn, set_key: set_key}) do
@@ -193,18 +192,18 @@ if Code.ensure_loaded?(Redix) do
     end
 
     defp diff_values(nil, new_values) do
-      encode!(new_values)
+      Jason.encode!(new_values)
     end
 
     defp diff_values(old_values, new_values) do
       old_values
-      |> decode!()
+      |> Jason.decode!()
       |> Kernel.--(new_values)
-      |> encode!()
+      |> Jason.encode!()
     end
 
     defp merge_values(nil, new_values) do
-      encode!(new_values)
+      Jason.encode!(new_values)
     end
 
     defp merge_values(old_values, []) do
@@ -213,10 +212,10 @@ if Code.ensure_loaded?(Redix) do
 
     defp merge_values(old_values, new_values) do
       old_values
-      |> decode!()
+      |> Jason.decode!()
       |> Kernel.++(new_values)
       |> Enum.uniq()
-      |> encode!()
+      |> Jason.encode!()
     end
 
     defp pipeline!(_conn, []) do
