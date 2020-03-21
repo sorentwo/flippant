@@ -26,7 +26,7 @@ defmodule Flippant.Mixfile do
   def application do
     [
       extra_applications: [:logger],
-      env: [adapter: Flippant.Adapter.Memory, serializer: Flippant.Serializer.Term],
+      env: [adapter: Flippant.Adapter.Memory],
       mod: {Flippant.Application, []}
     ]
   end
@@ -48,7 +48,7 @@ defmodule Flippant.Mixfile do
 
   defp deps do
     [
-      {:jason, "~> 1.0", optional: true},
+      {:jason, "~> 1.0"},
       {:postgrex, "~> 0.14", optional: true},
       {:redix, "~> 0.10", optional: true},
       {:benchee, "~> 1.0", only: [:dev], runtime: false},
