@@ -6,27 +6,34 @@ defmodule Flippant.Rules do
   @type rules :: Enumerable.t()
   @type actor :: term()
 
-  alias Flippant.Registry
+  @doc """
+  Validate that an actor is both a member of `group` and in the `enabled_for` list. For example,
+  if we had a `staff` group, and a rule containing `%{"staff" => ids}`, we could have a function
+  like this:
+
+  ```
+    def enabled?("staff", enabled_for, %{staff: true} = actor) do
+      Enum.any?(enabled_for, &actor.id == &1.id)
+    end
+  ```
+
+  This both validates the actor is staff, and that the actor is in the enabled list. Allowing
+  rules definition in this way makes the logic for rule checking very visible in application
+  code.
+  """
+  @callback enabled?(group :: binary(), enabled_for :: list(), actor :: Rules.actor()) ::
+              boolean()
 
   @doc """
   Check whether any rules are enabled for a particular actor. The function
   accepts a list of names/value pairs and an actor.
-
-  # Example
-
-      Flippant.Rules.enabled_for_actor?(rules, actor, groups)
-
-  Without a third argument of the groups to be checked it falls back to
-  collecting the globally registered groups.
   """
-  @spec enabled_for_actor?(rules(), actor(), map() | nil) :: boolean()
-  def enabled_for_actor?(rules, actor, groups \\ nil) do
-    groups = groups || Registry.registered()
+  @spec enabled_for_actor?(rules(), actor()) :: boolean()
+  def enabled_for_actor?(rules, actor) do
+    ruleset = Application.fetch_env!(:flippant, :rules)
 
-    Enum.any?(rules, fn {name, values} ->
-      if fun = Map.get(groups, name) do
-        apply(fun, [actor, values])
-      end
+    Enum.any?(rules, fn {group, enabled_for} ->
+      ruleset.enabled?(group, enabled_for, actor)
     end)
   end
 end
