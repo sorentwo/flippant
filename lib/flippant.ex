@@ -191,8 +191,6 @@ defmodule Flippant do
       Flippant.load("flippant.dump")
   """
 
-  alias Flippant.Registry
-
   # Adapter
 
   @doc """
@@ -257,51 +255,25 @@ defmodule Flippant do
   end
 
   @doc """
-  Purge registered groups, features, or both.
+  Purge registered features.
 
   This is particularly useful in testing when you want to reset to a clean
   slate after a test.
 
   ## Examples
 
-  Clear everything:
-
       Flippant.clear()
       #=> :ok
-
-  Clear only features:
-
-      Flippant.clear(:features)
-      #=> :ok
-
-  Clear only groups:
-
-      Flippant.clear(:groups)
-      #=> :ok
   """
-  @spec clear(:all | :features | :groups) :: :ok
-  def clear(selection \\ :all)
-
-  def clear(:features) do
+  @spec clear() :: :ok
+  def clear do
     GenServer.cast(adapter(), :clear)
-  end
-
-  def clear(:groups) do
-    Registry.clear()
-  end
-
-  def clear(:all) do
-    :ok = clear(:groups)
-    :ok = clear(:features)
-
-    :ok
   end
 
   @doc """
   Disable a feature for a particular group.
 
-  The feature is kept in the registry, but any rules for that group are
-  removed.
+  The feature is kept, but any rules for that group are removed.
 
   ## Examples
 
@@ -518,37 +490,5 @@ defmodule Flippant do
     value
     |> String.downcase()
     |> String.trim()
-  end
-
-  # Registry
-
-  @doc """
-  Register a new group name and function.
-
-  The function *must* have an arity of 2 or it won't be accepted. Registering
-  a group with the same name will overwrite the previous group.
-
-  ## Examples
-
-      Flippant.register("evens", & rem(&1.id, 2) == 0)
-      #=> :ok
-  """
-  @spec register(binary, (any, list -> boolean)) :: :ok
-  def register(group, fun) when is_binary(group) and is_function(fun, 2) do
-    Registry.register(group, fun)
-  end
-
-  @doc """
-  List all of the registered groups as a map where the keys are the names and
-  values are the functions.
-
-  ## Examples
-
-      Flippant.registered()
-      #=> %{"staff" => #Function<20.50752066/0}
-  """
-  @spec registered() :: map()
-  def registered do
-    Registry.registered()
   end
 end

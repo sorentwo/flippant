@@ -8,7 +8,6 @@ defmodule Flippant.Application do
   @doc false
   def start(_, _) do
     children = [
-      worker(Flippant.Registry, []),
       worker(adapter(), [flippant_opts()])
     ]
 

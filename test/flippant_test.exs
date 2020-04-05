@@ -5,6 +5,20 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
     @adapter adapter
     @moduletag adapter: adapter
 
+    defmodule TestRules do
+      def enabled?("awesome", _enabled_for, %{awesome?: true}), do: true
+
+      def enabled?("extreme", enabled_for, actor) do
+        Enum.any?(enabled_for, &(actor.id == &1))
+      end
+
+      def enabled?("radical", _enabled_for, %{radical?: true}), do: true
+
+      def enabled?("heinous", _enabled_for, %{awesome?: false}), do: true
+
+      def enabled?(_group, _enabled_for, _actor), do: false
+    end
+
     setup_all do
       Logger.configure(level: :warn)
 
@@ -20,7 +34,9 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
     setup do
       Flippant.clear()
 
-      :ok
+      Application.put_env(:flippant, :rules, TestRules)
+
+      on_exit(fn -> Application.put_env(:flippant, :rules, Default) end)
     end
 
     describe "add/1" do
@@ -41,31 +57,14 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
       end
     end
 
-    test "clear/0 removes all known groups and features" do
+    test "clear/0 removes all known features" do
       Flippant.add("search")
-      Flippant.register("awesome", fn _, _ -> true end)
 
       assert Flippant.features() != []
-      assert Flippant.registered() != %{}
 
       Flippant.clear()
 
       assert Flippant.features() == []
-      assert Flippant.registered() == %{}
-    end
-
-    test "clear/1 removes either groups or features" do
-      Flippant.add("search")
-      Flippant.register("awesome", fn _, _ -> true end)
-
-      Flippant.clear(:features)
-
-      assert Flippant.features() == []
-      refute Flippant.registered() == %{}
-
-      Flippant.clear(:groups)
-
-      assert Flippant.registered() == %{}
     end
 
     test "remove/1 removes a specific feature" do
@@ -189,24 +188,19 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
     end
 
     test "enabled?/2 checks a feature for an actor" do
-      Flippant.register("staff", fn actor, _values -> actor.staff? end)
-
-      actor_a = %{id: 1, staff?: true}
-      actor_b = %{id: 2, staff?: false}
+      actor_a = %{id: 1, awesome?: true}
+      actor_b = %{id: 2, awesome?: false}
 
       refute Flippant.enabled?("search", actor_a)
       refute Flippant.enabled?("search", actor_b)
 
-      Flippant.enable("search", "staff")
+      Flippant.enable("search", "awesome")
 
       assert Flippant.enabled?("search", actor_a)
       refute Flippant.enabled?("search", actor_b)
     end
 
     test "enabled?/2 checks for a feature against multiple groups" do
-      Flippant.register("awesome", fn actor, _ -> actor.awesome? end)
-      Flippant.register("radical", fn actor, _ -> actor.radical? end)
-
       actor_a = %{id: 1, awesome?: true, radical?: false}
       actor_b = %{id: 2, awesome?: false, radical?: true}
       actor_c = %{id: 3, awesome?: false, radical?: false}
@@ -220,12 +214,10 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
     end
 
     test "enabled?/2 uses rule values when checking" do
-      Flippant.register("awesome", fn actor, ids -> actor.id in ids end)
-
       actor_a = %{id: 1}
       actor_b = %{id: 5}
 
-      Flippant.enable("search", "awesome", [1, 2, 3])
+      Flippant.enable("search", "extreme", [1, 2, 3])
 
       assert Flippant.enabled?("search", actor_a)
       refute Flippant.enabled?("search", actor_b)
@@ -255,14 +247,14 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
       end
 
       test "it lists all features with their metadata" do
-        Flippant.register("awesome", fn _, _ -> true end)
-        Flippant.register("radical", fn _, _ -> false end)
-        Flippant.register("heinous", fn _, _ -> false end)
-
         Flippant.enable("search", "awesome")
-        Flippant.enable("search", "heinous", [1, 2])
+        Flippant.enable("search", "heinous", [%{awesome?: true, id: 1}, %{awesome?: true, id: 2}])
         Flippant.enable("delete", "radical")
-        Flippant.enable("invite", "heinous", [5, 6])
+
+        Flippant.enable("invite", "heinous", [
+          %{awesome?: false, id: 5},
+          %{awesome?: false, id: 6}
+        ])
 
         %{"search" => search, "delete" => delete, "invite" => invite} = Flippant.breakdown()
 
@@ -278,10 +270,6 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
       end
 
       test "it lists all enabled features for an actor" do
-        Flippant.register("awesome", fn actor, _ -> actor.awesome? end)
-        Flippant.register("radical", fn actor, _ -> actor.radical? end)
-        Flippant.register("heinous", fn actor, _ -> !actor.awesome? end)
-
         actor = %{id: 1, awesome?: true, radical?: true}
 
         Flippant.enable("search", "awesome")
