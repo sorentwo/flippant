@@ -12,9 +12,7 @@ defmodule Bench.Adapters do
   end
 
   def configure(adapter) do
-    Application.stop(:flippant)
-    Application.put_env(:flippant, :adapter, adapter)
-    Application.ensure_started(:flippant)
+    start_supervised!({Flippant, adapter: adapter})
 
     Flippant.setup()
     Flippant.clear()

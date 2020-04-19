@@ -7,7 +7,7 @@ defmodule Flippant.Mixfile do
     [
       app: :flippant,
       version: @version,
-      elixir: "~> 1.6",
+      elixir: "~> 1.10",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
@@ -25,9 +25,7 @@ defmodule Flippant.Mixfile do
 
   def application do
     [
-      extra_applications: [:logger],
-      env: [adapter: Flippant.Adapter.Memory, rules: Flippant.Rules.Default],
-      mod: {Flippant.Application, []}
+      extra_applications: [:logger]
     ]
   end
 
