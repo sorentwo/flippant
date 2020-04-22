@@ -6,6 +6,8 @@ defmodule Flippant.Rules do
   @type rules :: Enumerable.t()
   @type actor :: term()
 
+  alias Flippant.Config
+
   @doc """
   Validate that an actor is both a member of `group` and in the `enabled_for` list. For example,
   if we had a `staff` group, and a rule containing `%{"staff" => ids}`, we could have a function
@@ -28,9 +30,9 @@ defmodule Flippant.Rules do
   Check whether any rules are enabled for a particular actor. The function
   accepts a list of names/value pairs and an actor.
   """
-  @spec enabled_for_actor?(rules(), actor()) :: boolean()
-  def enabled_for_actor?(rules, actor) do
-    ruleset = Application.fetch_env!(:flippant, :rules)
+  @spec enabled_for_actor?(name :: atom(), rules(), actor()) :: boolean()
+  def enabled_for_actor?(name \\ Flippant, rules, actor) do
+    %{rules: ruleset} = Config.get(name)
 
     Enum.any?(rules, fn {group, enabled_for} ->
       ruleset.enabled?(group, enabled_for, actor)

@@ -191,6 +191,28 @@ defmodule Flippant do
       Flippant.load("flippant.dump")
   """
 
+  use Supervisor
+
+  alias Flippant.Config
+
+  @doc """
+  Start a Flippant process linked to the current process.
+  """
+  @spec start_link([{:name, module()}]) :: Supervisor.on_start()
+  def start_link(opts \\ []) do
+    opts = Keyword.put_new(opts, :name, __MODULE__)
+    conf = Config.new(opts)
+
+    :ok = Config.put(opts[:name], conf)
+
+    Supervisor.start_link(__MODULE__, conf, name: opts[:name])
+  end
+
+  @impl true
+  def init(conf) do
+    Supervisor.init([{conf.adapter, conf.adapter_opts}], strategy: :one_for_one)
+  end
+
   # Adapter
 
   @doc """
@@ -198,11 +220,11 @@ defmodule Flippant do
 
   This will return `nil` if the adapter hasn't been started.
   """
-  @spec adapter() :: pid | nil
-  def adapter do
-    :flippant
-    |> Application.fetch_env!(:adapter)
-    |> Process.whereis()
+  @spec adapter(name :: atom()) :: pid | nil
+  def adapter(name \\ __MODULE__) do
+    %{adapter: adapter} = Config.get(name)
+
+    Process.whereis(adapter)
   end
 
   @doc """
@@ -216,9 +238,11 @@ defmodule Flippant do
       Flippant.add("search")
       #=> :ok
   """
-  @spec add(binary) :: :ok
-  def add(feature) when is_binary(feature) do
-    GenServer.cast(adapter(), {:add, normalize(feature)})
+  @spec add(name :: atom(), feature :: binary()) :: :ok
+  def add(name \\ __MODULE__, feature) when is_binary(feature) do
+    name
+    |> adapter()
+    |> GenServer.cast({:add, normalize(feature)})
   end
 
   @doc """
@@ -249,9 +273,14 @@ defmodule Flippant do
       Flippant.breakdown(actor)
       #=> %{"delete" => true, "search" => false}
   """
-  @spec breakdown(map | struct | :all) :: map
-  def breakdown(actor \\ :all) do
-    GenServer.call(adapter(), {:breakdown, actor})
+  @spec breakdown(actor :: map | struct | :all) :: map
+  def breakdown(actor \\ :all), do: breakdown(__MODULE__, actor)
+
+  @spec breakdown(name :: atom(), actor :: map | struct | :all) :: map
+  def breakdown(name, actor) do
+    name
+    |> adapter()
+    |> GenServer.call({:breakdown, actor})
   end
 
   @doc """
@@ -265,9 +294,11 @@ defmodule Flippant do
       Flippant.clear()
       #=> :ok
   """
-  @spec clear() :: :ok
-  def clear do
-    GenServer.cast(adapter(), :clear)
+  @spec clear(name :: atom()) :: :ok
+  def clear(name \\ __MODULE__) do
+    name
+    |> adapter()
+    |> GenServer.cast(:clear)
   end
 
   @doc """
@@ -294,7 +325,15 @@ defmodule Flippant do
   @spec disable(binary, binary) :: :ok
   def disable(feature, group, values \\ [])
       when is_binary(feature) and is_binary(group) and is_list(values) do
-    GenServer.cast(adapter(), {:remove, normalize(feature), group, values})
+    disable(__MODULE__, feature, group, values)
+  end
+
+  @spec disable(name :: atom(), binary, binary) :: :ok
+  def disable(name, feature, group, values)
+      when is_binary(feature) and is_binary(group) and is_list(values) do
+    name
+    |> adapter()
+    |> GenServer.cast({:remove, normalize(feature), group, values})
   end
 
   @doc """
@@ -313,10 +352,11 @@ defmodule Flippant do
       Flippant.dump((Date.utc_today() |> Date.to_string()) <> ".dump")
       #=> :ok
   """
-  @spec dump(binary()) :: :ok | {:error, File.posix()}
-  def dump(path) when is_binary(path) do
+  @spec dump(name :: atom(), binary()) :: :ok | {:error, File.posix()}
+  def dump(name \\ __MODULE__, path) when is_binary(path) do
     dumped =
-      adapter()
+      name
+      |> adapter()
       |> GenServer.call({:breakdown, :all})
       |> Jason.encode!()
 
@@ -350,9 +390,16 @@ defmodule Flippant do
       #=> :ok
   """
   @spec enable(binary, binary, list(any)) :: :ok
-  def enable(feature, group, values \\ [])
+  def enable(feature, group, values \\ []) do
+    enable(__MODULE__, feature, group, values)
+  end
+
+  @spec enable(name :: atom(), binary, binary, list(any)) :: :ok
+  def enable(name, feature, group, values)
       when is_binary(feature) and is_binary(group) do
-    GenServer.cast(adapter(), {:add, normalize(feature), {group, values}})
+    name
+    |> adapter()
+    |> GenServer.cast({:add, normalize(feature), {group, values}})
   end
 
   @doc """
@@ -366,9 +413,11 @@ defmodule Flippant do
       Flippant.enabled?("search", actor)
       #=> false
   """
-  @spec enabled?(binary, map | struct) :: boolean
-  def enabled?(feature, actor) when is_binary(feature) do
-    GenServer.call(adapter(), {:enabled?, normalize(feature), actor})
+  @spec enabled?(name :: atom(), binary, map | struct) :: boolean
+  def enabled?(name \\ __MODULE__, feature, actor) when is_binary(feature) do
+    name
+    |> adapter()
+    |> GenServer.call({:enabled?, normalize(feature), actor})
   end
 
   @doc """
@@ -388,7 +437,14 @@ defmodule Flippant do
   """
   @spec exists?(binary(), binary() | :any) :: boolean()
   def exists?(feature, group \\ :any) when is_binary(feature) do
-    GenServer.call(adapter(), {:exists?, normalize(feature), group})
+    exists?(__MODULE__, feature, group)
+  end
+
+  @spec exists?(name :: atom(), binary(), binary() | :any) :: boolean()
+  def exists?(name, feature, group) when is_binary(feature) do
+    name
+    |> adapter()
+    |> GenServer.call({:exists?, normalize(feature), group})
   end
 
   @doc """
@@ -411,7 +467,14 @@ defmodule Flippant do
   """
   @spec features(:all | binary()) :: list(binary())
   def features(group \\ :all) do
-    GenServer.call(adapter(), {:features, group})
+    features(__MODULE__, group)
+  end
+
+  @spec features(name :: atom(), :all | binary()) :: list(binary())
+  def features(name, group) do
+    name
+    |> adapter()
+    |> GenServer.call({:features, group})
   end
 
   @doc """
@@ -430,12 +493,12 @@ defmodule Flippant do
       Flippant.clear(:features) #=> :ok
       Flippant.load("backup.dump") #=> :ok
   """
-  @spec load(binary()) :: :ok | {:error, File.posix() | binary()}
-  def load(path) when is_binary(path) do
+  @spec load(name :: atom(), binary()) :: :ok | {:error, File.posix() | binary()}
+  def load(name \\ __MODULE__, path) when is_binary(path) do
     with {:ok, data} <- File.read(path) do
-      loaded = Jason.decode!(data)
-
-      GenServer.cast(adapter(), {:restore, loaded})
+      name
+      |> adapter()
+      |> GenServer.cast({:restore, Jason.decode!(data)})
     end
   end
 
@@ -450,10 +513,12 @@ defmodule Flippant do
       Flippant.rename("search", "super-search")
       :ok
   """
-  @spec rename(binary, binary) :: :ok
-  def rename(old_name, new_name)
+  @spec rename(name :: atom(), binary, binary) :: :ok
+  def rename(name \\ __MODULE__, old_name, new_name)
       when is_binary(old_name) and is_binary(new_name) do
-    GenServer.cast(adapter(), {:rename, normalize(old_name), normalize(new_name)})
+    name
+    |> adapter()
+    |> GenServer.cast({:rename, normalize(old_name), normalize(new_name)})
   end
 
   @doc """
@@ -464,9 +529,11 @@ defmodule Flippant do
       Flippant.remove("search")
       :ok
   """
-  @spec remove(binary) :: :ok
-  def remove(feature) when is_binary(feature) do
-    GenServer.cast(adapter(), {:remove, normalize(feature)})
+  @spec remove(name :: atom(), binary) :: :ok
+  def remove(name \\ __MODULE__, feature) when is_binary(feature) do
+    name
+    |> adapter()
+    |> GenServer.cast({:remove, normalize(feature)})
   end
 
   @doc """
@@ -481,9 +548,21 @@ defmodule Flippant do
       Flippant.setup()
       :ok
   """
-  @spec setup() :: :ok
-  def setup do
-    GenServer.cast(adapter(), :setup)
+  @spec setup(name :: atom()) :: :ok
+  def setup(name \\ __MODULE__) do
+    name
+    |> adapter()
+    |> GenServer.cast(:setup)
+  end
+
+  @doc false
+  def update_config(name \\ __MODULE__, key, value) do
+    conf =
+      name
+      |> Config.get()
+      |> Map.put(key, value)
+
+    Config.put(name, conf)
   end
 
   defp normalize(value) when is_binary(value) do

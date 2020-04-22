@@ -39,9 +39,9 @@ defmodule Flippant.RulesTest do
 
   describe "enabled_for_actor?/2 with custom rules" do
     setup do
-      Application.put_env(:flippant, :rules, TestRules)
+      Flippant.update_config(:rules, TestRules)
 
-      on_exit(fn -> Application.put_env(:flippant, :rules, Default) end)
+      on_exit(fn -> Flippant.update_config(:rules, Default) end)
     end
 
     test "groups and membership are asserted through custom rules" do

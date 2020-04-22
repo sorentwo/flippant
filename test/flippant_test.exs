@@ -22,9 +22,7 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
     setup_all do
       Logger.configure(level: :warn)
 
-      Application.stop(:flippant)
-      Application.put_env(:flippant, :adapter, @adapter)
-      Application.ensure_started(:flippant)
+      start_supervised!({Flippant, adapter: @adapter})
 
       Flippant.setup()
 
@@ -34,9 +32,9 @@ for adapter <- [Flippant.Adapter.Memory, Flippant.Adapter.Postgres, Flippant.Ada
     setup do
       Flippant.clear()
 
-      Application.put_env(:flippant, :rules, TestRules)
+      Flippant.update_config(:rules, TestRules)
 
-      on_exit(fn -> Application.put_env(:flippant, :rules, Default) end)
+      on_exit(fn -> Flippant.update_config(:rules, Flippant.Rules.Default) end)
     end
 
     describe "add/1" do
