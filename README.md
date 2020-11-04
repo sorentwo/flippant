@@ -13,7 +13,7 @@
 
   ```elixir
   def deps do
-    [{:flippant, "~> 0.3"}]
+    [{:flippant, "~> 2.0"}]
   end
   ```
 
@@ -21,7 +21,7 @@
 
   ```elixir
   def deps do
-    [{:redix, "~> 0.7"}]
+    [{:redix, "~> 1.0"}]
   end
   ```
 
