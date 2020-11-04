@@ -1,3 +1,16 @@
+## v2.0.0 2019-11-04
+
+### Breaking Changes
+
+* Convert to supervisor (#42)
+* Move towards a ruleset module instead of a registry (#41)
+* Update build matrix and bump dependencies + fix warnings, typespecs and brittle tests
+
+## Enhancements
+
+* Force Jason for serialization (#40)
+* Update all dependencies, add benchmarks
+
 ## v1.0.0 2018-03-20
 
 ### Enhancements
