@@ -5,7 +5,7 @@
 [![Hex version](https://img.shields.io/hexpm/v/flippant.svg "Hex version")](https://hex.pm/packages/flippant)
 [![Inline docs](https://inch-ci.org/github/sorentwo/flippant.svg)](https://inch-ci.org/github/sorentwo/flippant)
 
-> Flippant is a libary for feature toggling in Elixir applications
+> Flippant is a library for feature toggling in Elixir applications
 
 ## Installation
 
@@ -37,7 +37,7 @@
 ## Usage
 
 Complete [documentation is available online](https://hexdocs.pm/flippant), but
-here is a breif overview:
+here is a brief overview:
 
 Features are comprised of `groups`, and `rules`. Your application defines named
 `groups`, and you set `rules` to specify which `groups` are enabled for a
