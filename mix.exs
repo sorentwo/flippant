@@ -46,7 +46,6 @@ defmodule Flippant.Mixfile do
     [
       {:jason, "~> 1.0"},
       {:postgrex, "~> 0.14", optional: true},
-      {:ecto_sql, "~> 3.9", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:benchee, "~> 1.0", only: [:dev], runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
