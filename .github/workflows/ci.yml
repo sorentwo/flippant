@@ -84,7 +84,7 @@ jobs:
       - name: Run mix test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/flippant_test
-        run: mix test
+        run: createdb flippant_test && mix test
 
       - name: Run dialyzer
         run: mix dialyzer
