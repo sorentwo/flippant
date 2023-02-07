@@ -1,16 +1,14 @@
 defmodule Flippant.Mixfile do
   use Mix.Project
 
-  @version "2.0.0"
+  @version "3.0.0-dev"
 
   def project do
     [
       app: :flippant,
       version: @version,
-      elixir: "~> 1.10",
-      build_embedded: Mix.env() == :prod,
+      elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      test_coverage: [tool: ExCoveralls],
       description: description(),
       package: package(),
       name: "Flippant",
@@ -48,13 +46,12 @@ defmodule Flippant.Mixfile do
     [
       {:jason, "~> 1.0"},
       {:postgrex, "~> 0.14", optional: true},
+      {:ecto_sql, "~> 3.9", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:benchee, "~> 1.0", only: [:dev], runtime: false},
-      {:credo, "~> 1.0", only: [:dev], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:ex_doc, "~> 0.19", only: [:dev], runtime: false},
-      {:inch_ex, "~> 2.0", only: [:dev], runtime: false},
-      {:excoveralls, "~> 0.11", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.19", only: [:dev, :test], runtime: false}
     ]
   end
 
